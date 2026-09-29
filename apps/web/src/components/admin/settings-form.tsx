@@ -1,10 +1,12 @@
 "use client"
 
-import { Delete02Icon, Pdf02Icon, ImageUpload01Icon, LinkSquare02Icon, RotateLeft01Icon } from "@hugeicons/core-free-icons"
+import { Pdf02Icon, LinkSquare02Icon, RotateLeft01Icon, TextFontIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { AnimatePresence, motion } from "motion/react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { Dropzone } from "@/components/admin/dropzone"
 import { Alert, AlertDescription, AlertTitle } from "@/components/admin/ui/alert"
 import { Badge } from "@/components/admin/ui/badge"
 import { Button } from "@/components/admin/ui/button"
@@ -16,45 +18,56 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@/components/admin/ui/spinner"
 import { Textarea } from "@/components/admin/ui/textarea"
 import { adminRequest } from "@/lib/admin-api"
-import { DEFAULT_THEME, FONT_CHOICES, googleFontsHref, isHex, type SiteSettings, THEME_FIELDS, type ThemeColors } from "@/lib/settings"
+import { DEFAULT_THEME, FONT_CHOICES, fontFaceCss, googleFontsHref, isHex, type SiteSettings, THEME_FIELDS, type ThemeColors, UPLOADED_BODY_FONT, UPLOADED_TITLE_FONT, type UploadSlot } from "@/lib/settings"
 
 type Meta = { writable: boolean; sanityConfigured: boolean; bounds: { min: number; max: number } }
 
 const DEFAULT_FONT = "__default__"
 
-function useFontPreview(fonts: (string | null)[]) {
-  const href = googleFontsHref(fonts)
+function useFontPreview(settings: SiteSettings) {
+  const href = googleFontsHref([settings.bodyFont, settings.displayFont])
+  const faces = fontFaceCss(settings.files)
   useEffect(() => {
-    if (!href) return
-    const link = document.createElement("link")
-    link.rel = "stylesheet"
-    link.href = href
-    document.head.appendChild(link)
-    return () => link.remove()
-  }, [href])
+    const nodes: HTMLElement[] = []
+    if (href) {
+      const link = document.createElement("link")
+      link.rel = "stylesheet"
+      link.href = href
+      nodes.push(link)
+    }
+    if (faces) {
+      const style = document.createElement("style")
+      style.textContent = faces
+      nodes.push(style)
+    }
+    nodes.forEach((n) => document.head.appendChild(n))
+    return () => nodes.forEach((n) => n.remove())
+  }, [href, faces])
 }
+
+const SERVER_MANAGED = (s: SiteSettings) => ({ ...s, logo: null, files: null, rulesPdf: null })
 
 export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: Meta }) {
   const router = useRouter()
   const [saved, setSaved] = useState(initial)
   const [draft, setDraft] = useState(initial)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const fileInput = useRef<HTMLInputElement>(null)
-  const dirty = useMemo(() => JSON.stringify({ ...draft, logo: null }) !== JSON.stringify({ ...saved, logo: null }), [draft, saved])
+  const [uploading, setUploading] = useState<UploadSlot | null>(null)
+  const dirty = useMemo(() => JSON.stringify(SERVER_MANAGED(draft)) !== JSON.stringify(SERVER_MANAGED(saved)), [draft, saved])
   const disabled = !meta.writable
-  useFontPreview([draft.bodyFont, draft.displayFont])
+  useFontPreview(draft)
 
   const set = <K extends keyof SiteSettings>(key: K, value: SiteSettings[K]) => setDraft((d) => ({ ...d, [key]: value }))
   const setColor = (key: keyof ThemeColors, value: string) => setDraft((d) => ({ ...d, theme: { ...d.theme, [key]: value } }))
 
   function applySaved(s: SiteSettings, keepDraft = false) {
     setSaved(s)
-    setDraft((d) => (keepDraft ? { ...d, logo: s.logo } : s))
+    setDraft((d) => (keepDraft ? { ...d, logo: s.logo, files: s.files, rulesPdf: s.rulesPdf } : s))
     router.refresh()
   }
 
   async function save() {
+    if (!dirty || saving || disabled) return
     const invalid = THEME_FIELDS.find((f) => !isHex(draft.theme[f.key]))
     if (invalid) return toast.error(`Couleur « ${invalid.label} » invalide (format #rrggbb).`)
     setSaving(true)
@@ -68,34 +81,63 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
     }
   }
 
-  async function upload(file: File) {
+  async function upload(slot: UploadSlot, file: File) {
     const form = new FormData()
     form.append("file", file)
-    setUploading(true)
+    setUploading(slot)
     try {
-      applySaved(await adminRequest<SiteSettings>("/api/admin/logo", { method: "POST", body: form }), true)
-      toast.success("Logo envoyé dans Sanity")
+      applySaved(await adminRequest<SiteSettings>(`/api/admin/upload/${slot}`, { method: "POST", body: form }), true)
+      toast.success(`${file.name} envoyé dans Sanity`)
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
-      setUploading(false)
-      if (fileInput.current) fileInput.current.value = ""
+      setUploading(null)
     }
   }
 
-  async function removeLogo() {
-    setUploading(true)
+  async function remove(slot: UploadSlot) {
+    setUploading(slot)
     try {
-      applySaved(await adminRequest<SiteSettings>("/api/admin/logo", { method: "DELETE" }), true)
+      applySaved(await adminRequest<SiteSettings>(`/api/admin/upload/${slot}`, { method: "DELETE" }), true)
     } catch (e) {
       toast.error((e as Error).message)
     } finally {
-      setUploading(false)
+      setUploading(null)
     }
   }
+
+  const saveRef = useRef(save)
+  useEffect(() => {
+    saveRef.current = save
+  })
+  const onKey = useCallback((e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+      e.preventDefault()
+      void saveRef.current()
+    }
+  }, [])
+  useEffect(() => {
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [onKey])
+
+  // Coller une image n'importe où (hors champ texte) = nouveau logo
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const target = e.target as HTMLElement | null
+      if (disabled || target?.closest("input, textarea, [contenteditable=true], [role=button]")) return
+      const image = Array.from(e.clipboardData?.files ?? []).find((f) => f.type.startsWith("image/"))
+      if (!image) return
+      e.preventDefault()
+      void upload("logo", image)
+    }
+    window.addEventListener("paste", onPaste)
+    return () => window.removeEventListener("paste", onPaste)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled])
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_22rem]">
       <div className="flex min-w-0 flex-col gap-6">
         {!meta.writable && (
           <Alert>
@@ -128,30 +170,24 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
               </Field>
               <Field>
                 <FieldLabel>Logo</FieldLabel>
-                <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl border bg-muted/50">
-                    {draft.logo ? (
+                <Dropzone
+                  size="lg"
+                  accept="image/*"
+                  title={draft.logo ? "Remplacer le logo" : "Déposer le logo"}
+                  hint="Glisser-déposer, cliquer, ou coller une image (⌘V) · PNG, SVG, WebP · 4 Mo max"
+                  busy={uploading === "logo"}
+                  disabled={disabled}
+                  current={
+                    draft.logo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={draft.logo} alt="Logo" className="max-h-full max-w-full object-contain p-2" />
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Aucun logo</span>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
-                    <Button variant="outline" size="sm" disabled={disabled || uploading} onClick={() => fileInput.current?.click()}>
-                      {uploading ? <Spinner data-icon="inline-start" /> : <HugeiconsIcon icon={ImageUpload01Icon} strokeWidth={2} data-icon="inline-start" />}
-                      {draft.logo ? "Remplacer" : "Envoyer une image"}
-                    </Button>
-                    {draft.logo && (
-                      <Button variant="ghost" size="sm" disabled={disabled || uploading} onClick={removeLogo}>
-                        <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} data-icon="inline-start" />
-                        Retirer
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                <FieldDescription>PNG, SVG ou WebP · 5 Mo max · stocké dans Sanity. Sans logo, le titre est affiché.</FieldDescription>
+                      <img src={draft.logo} alt="Logo" className="max-h-28 max-w-[70%] object-contain" />
+                    ) : undefined
+                  }
+                  onFile={(f) => upload("logo", f)}
+                  onRemove={draft.logo ? () => remove("logo") : undefined}
+                  removeLabel="Retirer le logo"
+                />
+                <FieldDescription>Stocké dans Sanity. Sans logo, le titre est affiché.</FieldDescription>
               </Field>
             </FieldGroup>
           </CardContent>
@@ -243,34 +279,58 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
         <Card>
           <CardHeader>
             <CardTitle>Typographie</CardTitle>
-            <CardDescription>Polices Google Fonts chargées sur le site.</CardDescription>
+            <CardDescription>Une police Google Fonts, ou votre propre fichier (.woff2, .woff, .ttf, .otf) envoyé dans Sanity.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-6 sm:grid-cols-2">
               {(
                 [
-                  { key: "displayFont", label: "Titres", hint: "Titres, boutons, annonces" },
-                  { key: "bodyFont", label: "Texte", hint: "Paragraphes et interface" },
+                  { key: "displayFont", slot: "fontDisplay", label: "Titres", hint: "Titres, boutons, annonces", family: UPLOADED_TITLE_FONT },
+                  { key: "bodyFont", slot: "fontBody", label: "Texte", hint: "Paragraphes et interface", family: UPLOADED_BODY_FONT },
                 ] as const
-              ).map((f) => (
-                <Field key={f.key}>
-                  <FieldLabel>{f.label}</FieldLabel>
-                  <Select value={draft[f.key] ?? DEFAULT_FONT} onValueChange={(v) => set(f.key, v === DEFAULT_FONT ? null : v)} disabled={disabled}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={DEFAULT_FONT}>{f.key === "displayFont" ? "Comme le texte" : "Police système arrondie"}</SelectItem>
-                      {FONT_CHOICES.map((font) => (
-                        <SelectItem key={font} value={font}>
-                          {font}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FieldDescription>{f.hint}</FieldDescription>
-                </Field>
-              ))}
+              ).map((f) => {
+                const file = draft.files[f.slot]
+                return (
+                  <Field key={f.key}>
+                    <FieldLabel>{f.label}</FieldLabel>
+                    <Select value={draft[f.key] ?? DEFAULT_FONT} onValueChange={(v) => set(f.key, v === DEFAULT_FONT ? null : v)} disabled={disabled || !!file}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={DEFAULT_FONT}>{f.key === "displayFont" ? "Comme le texte" : "Police système arrondie"}</SelectItem>
+                        {FONT_CHOICES.map((font) => (
+                          <SelectItem key={font} value={font}>
+                            {font}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Dropzone
+                      accept=".woff2,.woff,.ttf,.otf"
+                      title={file ? file.name : "Importer une police"}
+                      hint={file ? "Remplace la police Google ci-dessus" : "Glisser-déposer ou cliquer · 4 Mo max"}
+                      busy={uploading === f.slot}
+                      disabled={disabled}
+                      current={
+                        file ? (
+                          <span className="text-3xl leading-none" style={{ fontFamily: `"${f.family}", sans-serif` }}>
+                            Aa
+                          </span>
+                        ) : (
+                          <span className="flex size-10 items-center justify-center rounded-full bg-background shadow-xs ring-1 ring-border">
+                            <HugeiconsIcon icon={TextFontIcon} strokeWidth={2} className="size-4" />
+                          </span>
+                        )
+                      }
+                      onFile={(file) => upload(f.slot, file)}
+                      onRemove={file ? () => remove(f.slot) : undefined}
+                      removeLabel="Retirer la police"
+                    />
+                    <FieldDescription>{f.hint}</FieldDescription>
+                  </Field>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -278,38 +338,65 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
         <Card>
           <CardHeader>
             <CardTitle>Règles PDF</CardTitle>
-            <CardDescription>Liens affichés dans la fenêtre des règles.</CardDescription>
+            <CardDescription>Affichées dans la fenêtre des règles. Envoyez le PDF, ou collez un lien s&apos;il est trop lourd (plus de 4 Mo).</CardDescription>
           </CardHeader>
           <CardContent>
-            <FieldGroup>
-              {(["fr", "en"] as const).map((lang) => (
-                <Field key={lang}>
-                  <FieldLabel htmlFor={`pdf-${lang}`}>Règles PDF ({lang.toUpperCase()})</FieldLabel>
-                  <InputGroup>
-                    <InputGroupAddon>
-                      <HugeiconsIcon icon={Pdf02Icon} strokeWidth={2} />
-                    </InputGroupAddon>
-                    <InputGroupInput
-                      id={`pdf-${lang}`}
-                      type="url"
-                      placeholder="https://…"
-                      value={draft.rulesPdf[lang] ?? ""}
-                      onChange={(e) => set("rulesPdf", { ...draft.rulesPdf, [lang]: e.target.value || null })}
+            <div className="grid gap-6 sm:grid-cols-2">
+              {(
+                [
+                  { lang: "fr", slot: "rulesFr", label: "Français" },
+                  { lang: "en", slot: "rulesEn", label: "English" },
+                ] as const
+              ).map(({ lang, slot, label }) => {
+                const file = draft.files[slot]
+                return (
+                  <Field key={lang}>
+                    <FieldLabel>Règles PDF · {label}</FieldLabel>
+                    <Dropzone
+                      accept="application/pdf,.pdf"
+                      title={file ? file.name : "Déposer le PDF"}
+                      hint={file ? "Cliquer pour remplacer" : "Glisser-déposer ou cliquer · 4 Mo max"}
+                      busy={uploading === slot}
                       disabled={disabled}
+                      current={
+                        <span className="flex size-10 items-center justify-center rounded-full bg-background shadow-xs ring-1 ring-border">
+                          <HugeiconsIcon icon={Pdf02Icon} strokeWidth={2} className="size-4" />
+                        </span>
+                      }
+                      onFile={(f) => upload(slot, f)}
+                      onRemove={file ? () => remove(slot) : undefined}
+                      removeLabel="Retirer le PDF"
                     />
-                    {draft.rulesPdf[lang] && (
-                      <InputGroupAddon align="inline-end">
-                        <InputGroupButton asChild size="icon-xs" aria-label="Ouvrir">
-                          <a href={draft.rulesPdf[lang]!} target="_blank" rel="noopener noreferrer">
-                            <HugeiconsIcon icon={LinkSquare02Icon} strokeWidth={2} />
-                          </a>
-                        </InputGroupButton>
-                      </InputGroupAddon>
+                    {!file && (
+                      <InputGroup>
+                        <InputGroupInput
+                          type="url"
+                          aria-label={`Lien vers les règles (${label})`}
+                          placeholder="ou coller un lien https://…"
+                          value={draft.rulesPdfLinks[lang] ?? ""}
+                          onChange={(e) => set("rulesPdfLinks", { ...draft.rulesPdfLinks, [lang]: e.target.value || null })}
+                          disabled={disabled}
+                        />
+                        {draft.rulesPdfLinks[lang] && (
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton asChild size="icon-xs" aria-label="Ouvrir">
+                              <a href={draft.rulesPdfLinks[lang]!} target="_blank" rel="noopener noreferrer">
+                                <HugeiconsIcon icon={LinkSquare02Icon} strokeWidth={2} />
+                              </a>
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        )}
+                      </InputGroup>
                     )}
-                  </InputGroup>
-                </Field>
-              ))}
-            </FieldGroup>
+                    {file && (
+                      <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground underline-offset-4 hover:underline">
+                        Ouvrir le PDF
+                      </a>
+                    )}
+                  </Field>
+                )
+              })}
+            </div>
           </CardContent>
         </Card>
 
@@ -373,29 +460,42 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
             <Preview settings={draft} />
           </CardContent>
         </Card>
-        <div className="flex items-center justify-between gap-3 rounded-2xl border bg-card p-3 pl-4">
-          {dirty ? <Badge variant="secondary">Non enregistré</Badge> : <span className="text-sm text-muted-foreground">À jour</span>}
-          <div className="flex gap-2">
-            {dirty && (
-              <Button variant="ghost" onClick={() => setDraft(saved)} disabled={saving}>
-                Annuler
-              </Button>
-            )}
-            <Button onClick={save} disabled={disabled || saving || !dirty}>
+      </aside>
+
+      <AnimatePresence>
+        {dirty && (
+          <motion.div
+            role="region"
+            aria-label="Modifications non enregistrées"
+            initial={{ opacity: 0, y: 24, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 24, x: "-50%" }}
+            transition={{ type: "spring", stiffness: 420, damping: 32 }}
+            className="fixed bottom-6 left-1/2 z-40 flex items-center gap-3 rounded-full border bg-background/90 py-2 pr-2 pl-4 shadow-lg ring-1 ring-black/5 backdrop-blur"
+          >
+            <Badge variant="secondary">Non enregistré</Badge>
+            <span className="hidden text-xs text-muted-foreground sm:inline">⌘S pour enregistrer</span>
+            <Button variant="ghost" onClick={() => setDraft(saved)} disabled={saving}>
+              Annuler
+            </Button>
+            <Button onClick={save} disabled={disabled || saving}>
               {saving && <Spinner data-icon="inline-start" />}
               Enregistrer
             </Button>
-          </div>
-        </div>
-      </aside>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
 function Preview({ settings }: { settings: SiteSettings }) {
   const { theme } = settings
-  const title = settings.displayFont ? `"${settings.displayFont}", sans-serif` : "ui-rounded, system-ui, sans-serif"
-  const body = settings.bodyFont ? `"${settings.bodyFont}", sans-serif` : "ui-rounded, system-ui, sans-serif"
+  const fallback = "ui-rounded, system-ui, sans-serif"
+  const bodyName = settings.files.fontBody ? UPLOADED_BODY_FONT : settings.bodyFont
+  const titleName = (settings.files.fontDisplay ? UPLOADED_TITLE_FONT : settings.displayFont) ?? bodyName
+  const title = titleName ? `"${titleName}", ${fallback}` : fallback
+  const body = bodyName ? `"${bodyName}", ${fallback}` : fallback
   return (
     <div
       className="flex aspect-[4/5] flex-col items-center overflow-hidden rounded-xl p-5 text-center"

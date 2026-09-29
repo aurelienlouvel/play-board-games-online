@@ -40,6 +40,12 @@ const FONT_WEIGHTS: Record<string, string> = {
 // authors : texte libre après « un jeu de », ex. « Romaric Galonnier et Anthony Perone, illustré par Noëmie Chevalier »
 export type Credits = { authors: string | null; publisher: string | null; publisherUrl: string | null }
 
+export type UploadedFile = { url: string; name: string }
+
+// Fichiers envoyés depuis /setup (stockés dans Sanity)
+export type UploadSlot = "logo" | "rulesFr" | "rulesEn" | "fontBody" | "fontDisplay"
+export type SettingsFiles = Record<Exclude<UploadSlot, "logo">, UploadedFile | null>
+
 export type ThemeColors = { background: string; foreground: string; accent: string; surface: string; surfaceDark: string }
 
 export type SiteSettings = {
@@ -51,7 +57,10 @@ export type SiteSettings = {
   theme: ThemeColors
   bodyFont: string | null
   displayFont: string | null
+  // lien effectif (PDF envoyé, sinon lien saisi)
   rulesPdf: { fr: string | null; en: string | null }
+  rulesPdfLinks: { fr: string | null; en: string | null }
+  files: SettingsFiles
   credits: Credits
 }
 
@@ -83,6 +92,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bodyFont: null,
   displayFont: null,
   rulesPdf: { fr: null, en: null },
+  rulesPdfLinks: { fr: null, en: null },
+  files: { rulesFr: null, rulesEn: null, fontBody: null, fontDisplay: null },
   credits: { authors: null, publisher: null, publisherUrl: null },
 }
 
@@ -103,6 +114,31 @@ const fontStack = (family: string | null, fallback: string) => (family ? `"${fam
 
 const BODY_FALLBACK = 'ui-rounded, "Avenir Next", "Nunito", system-ui, -apple-system, sans-serif'
 
+export const UPLOADED_BODY_FONT = "Site Body"
+export const UPLOADED_TITLE_FONT = "Site Title"
+
+const bodyFamily = (s: SiteSettings) => (s.files.fontBody ? UPLOADED_BODY_FONT : s.bodyFont)
+const titleFamily = (s: SiteSettings) => (s.files.fontDisplay ? UPLOADED_TITLE_FONT : s.displayFont)
+
+const FONT_FORMATS: Record<string, string> = { woff2: "woff2", woff: "woff", ttf: "truetype", otf: "opentype" }
+
+export const mediaUrl = (url: string) => `/api/media?url=${encodeURIComponent(url)}`
+
+// @font-face des polices envoyées (servies en same-origin par /api/media)
+export function fontFaceCss(files: SettingsFiles) {
+  const entries: [string, UploadedFile | null][] = [
+    [UPLOADED_BODY_FONT, files.fontBody],
+    [UPLOADED_TITLE_FONT, files.fontDisplay],
+  ]
+  return entries
+    .filter((f): f is [string, UploadedFile] => !!f[1])
+    .map(([family, file]) => {
+      const format = FONT_FORMATS[file.name.split(".").pop()?.toLowerCase() ?? ""]
+      return `@font-face{font-family:"${family}";src:url("${mediaUrl(file.url)}")${format ? ` format("${format}")` : ""};font-weight:100 900;font-display:swap}`
+    })
+    .join("")
+}
+
 export function themeStyle(s: SiteSettings): Record<string, string> {
   return {
     "--background": s.theme.background,
@@ -117,8 +153,8 @@ export function themeStyle(s: SiteSettings): Record<string, string> {
     "--secondary-foreground": s.theme.background,
     "--muted": `color-mix(in oklab, ${s.theme.surface}, ${s.theme.foreground} 8%)`,
     "--accent": `color-mix(in oklab, ${s.theme.surface}, ${s.theme.foreground} 8%)`,
-    "--font-body": fontStack(s.bodyFont, BODY_FALLBACK),
-    "--font-title": fontStack(s.displayFont ?? s.bodyFont, BODY_FALLBACK),
+    "--font-body": fontStack(bodyFamily(s), BODY_FALLBACK),
+    "--font-title": fontStack(titleFamily(s) ?? bodyFamily(s), BODY_FALLBACK),
   }
 }
 

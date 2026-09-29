@@ -7,8 +7,8 @@ const MESSAGES: Record<string, string> = {
   INVALID_URL: "Les liens doivent commencer par http(s)://.",
   EMPTY_TITLE: "Le titre est obligatoire.",
   EMPTY_TEXT: "La tâche est vide.",
-  INVALID_FILE: "Choisissez une image.",
-  FILE_TOO_LARGE: "Image trop lourde (5 Mo max).",
+  INVALID_FILE: "Format de fichier non accepté.",
+  FILE_TOO_LARGE: "Fichier trop lourd (4 Mo max ici) : passez par le studio Sanity ou un lien.",
 }
 
 export class AdminApiError extends Error {

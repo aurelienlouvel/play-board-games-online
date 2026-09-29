@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { SettingsProvider } from "@/components/settings-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { googleFontsHref, themeStyle } from "@/lib/settings"
+import { fontFaceCss, googleFontsHref, themeStyle } from "@/lib/settings"
 import { loadSettings } from "@/lib/settings-server"
 import { AUTHOR, KEYWORDS, SITE_URL } from "@/lib/site"
 import "./globals.css"
@@ -34,10 +34,12 @@ export async function generateViewport(): Promise<Viewport> {
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const settings = await loadSettings()
-  const fonts = googleFontsHref([settings.bodyFont, settings.displayFont])
+  const fonts = googleFontsHref([settings.files.fontBody ? null : settings.bodyFont, settings.files.fontDisplay ? null : settings.displayFont])
+  const fontFaces = fontFaceCss(settings.files)
   return (
     <html lang="fr" className="h-full antialiased" style={themeStyle(settings) as React.CSSProperties}>
       <head>
+        {fontFaces && <style dangerouslySetInnerHTML={{ __html: fontFaces }} />}
         {fonts && (
           <>
             <link rel="preconnect" href="https://fonts.googleapis.com" />
