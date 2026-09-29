@@ -81,6 +81,8 @@ ask() {
 confirm() { local a; printf "  %s [O/n] : " "$1"; read -r a; [[ -z "$a" || "$a" =~ ^[oOyY] ]]; }
 
 SLUG="$(basename "$ROOT")"
+# play-game-online-template → play-game-online-template.vercel.app ; skull-king → play-skull-king-online.vercel.app
+if [[ "$SLUG" == play-* ]]; then DOMAIN="$SLUG.vercel.app"; else DOMAIN="play-$SLUG-online.vercel.app"; fi
 PROJECT="$(node -e 'try{console.log(require("./.vercel/project.json").projectName||"")}catch{console.log("")}')"
 PROJECT="${PROJECT:-$SLUG}"
 echo "Jeu : $SLUG  ·  fichier : $ENV_FILE"
@@ -114,7 +116,7 @@ else
   warn "Pas connecté à Vercel — on continue en local"
 fi
 
-ask NEXT_PUBLIC_SITE_URL "URL du site" "https://play-${SLUG%-online}-online.vercel.app"
+ask NEXT_PUBLIC_SITE_URL "URL du site" "https://$DOMAIN"
 SITE_URL="$(current NEXT_PUBLIC_SITE_URL)"
 
 # ---------- Sanity ----------
@@ -144,10 +146,13 @@ if [ -n "$STOKEN" ] && [ -n "$SITE_URL" ]; then
   S -X POST "$SANITY_API/projects/$PID/cors" -d "{\"origin\":\"$SITE_URL\",\"allowCredentials\":false}" >/dev/null
 fi
 
-if grep -q "__SANITY_PROJECT_ID__" apps/studio/sanity.cli.ts 2>/dev/null; then
-  warn "apps/studio/sanity.cli.ts contient encore __SANITY_PROJECT_ID__ (lance setup-games.sh) — schéma non déployé"
-elif confirm "Déployer le schéma Sanity (champs Settings pour /setup) ?"; then
-  if (cd apps/studio && SANITY_AUTH_TOKEN="$STOKEN" npx sanity schema deploy >"$TMP/schema.log" 2>&1); then ok "Schéma Sanity déployé"
+DATASET="$(current NEXT_PUBLIC_SANITY_DATASET)"
+# le studio lit ces variables (apps/studio/.env, non commité) : pnpm dev:studio et les déploiements utilisent le bon projet
+STUDIO_HOST="$(envget apps/studio/.env SANITY_STUDIO_HOST)"; STUDIO_HOST="${STUDIO_HOST:-$SLUG}"
+printf "SANITY_STUDIO_PROJECT_ID=%s\nSANITY_STUDIO_DATASET=%s\nSANITY_STUDIO_HOST=%s\n" "$PID" "$DATASET" "$STUDIO_HOST" > apps/studio/.env
+echo "$PID" > .sanity-project-id
+if confirm "Déployer le schéma Sanity (champs Settings pour /setup) ?"; then
+  if (cd apps/studio && SANITY_AUTH_TOKEN="$STOKEN" SANITY_STUDIO_PROJECT_ID="$PID" SANITY_STUDIO_DATASET="$DATASET" npx sanity schema deploy >"$TMP/schema.log" 2>&1); then ok "Schéma Sanity déployé"
   else err "schema deploy : $(tail -3 "$TMP/schema.log")"; fi
 fi
 

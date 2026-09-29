@@ -9,6 +9,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "deploy:studio": "pnpm --filter studio run deploy",
-    "setup:env": "bash scripts/setup-env.sh"
+    "setup:env": "bash scripts/setup-env.sh",
+    "go-live": "bash scripts/go-live.sh"
   }
 }

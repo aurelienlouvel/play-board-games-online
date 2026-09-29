@@ -27,3 +27,4 @@ next-env.d.ts
 
 # sanity
 apps/studio/schema.json
+.sanity-project-id

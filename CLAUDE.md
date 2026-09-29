@@ -59,6 +59,8 @@ Fichiers dans `apps/web/public` nommés en anglais, `UPPER_SNAKE_CASE` (ex. `car
 - Routes : `POST /api/games`, `GET /api/games/[code]`, `POST .../join|leave|options|start|action|replay|debug`
 
 ## Variables d'environnement
+- `pnpm go-live` (`scripts/go-live.sh`) met le repo en ligne (GitHub, Sanity, Vercel) puis lance `pnpm setup:env`
+- Le projet Sanity du repo est lu depuis les variables d'env (`apps/studio/.env`, `NEXT_PUBLIC_SANITY_PROJECT_ID`) : ne pas remplacer les placeholders `__SANITY_*__` dans le template
 - `pnpm setup:env` (`scripts/setup-env.sh`) les renseigne toutes (questions guidées, secrets masqués) : `.env.local` + Vercel. Ne jamais demander de secret dans le chat
 
 ## Principes
