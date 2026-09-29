@@ -36,6 +36,9 @@ const FONT_WEIGHTS: Record<string, string> = {
   Alegreya: "400..900",
 }
 
+// Crédits du jeu original, affichés dans le pied de page (vides : pas de mention d'adaptation)
+export type Credits = { authors: string | null; illustrator: string | null; publisher: string | null; publisherUrl: string | null }
+
 export type ThemeColors = { background: string; foreground: string; accent: string; surface: string; surfaceDark: string }
 
 export type SiteSettings = {
@@ -48,6 +51,7 @@ export type SiteSettings = {
   bodyFont: string | null
   displayFont: string | null
   rulesPdf: { fr: string | null; en: string | null }
+  credits: Credits
 }
 
 export const THEME_FIELDS: { key: keyof ThemeColors; label: string; hint: string }[] = [
@@ -78,6 +82,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bodyFont: null,
   displayFont: null,
   rulesPdf: { fr: null, en: null },
+  credits: { authors: null, illustrator: null, publisher: null, publisherUrl: null },
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/

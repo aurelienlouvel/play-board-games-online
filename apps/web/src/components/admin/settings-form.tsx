@@ -312,6 +312,40 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
             </FieldGroup>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Crédits du jeu</CardTitle>
+            <CardDescription>
+              Affichés dans le pied de page : « Adaptation en ligne non officielle et gratuite de {draft.title || "…"}, un jeu de …, illustré par … et édité par … ». Laisser vide pour
+              un jeu original.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {(
+                [
+                  { key: "authors", label: "Auteurs", placeholder: "Romaric Galonnier et Anthony Perone" },
+                  { key: "illustrator", label: "Illustration", placeholder: "Noëmie Chevalier" },
+                  { key: "publisher", label: "Éditeur", placeholder: "Catch Up Games" },
+                  { key: "publisherUrl", label: "Page du jeu chez l'éditeur", placeholder: "https://…" },
+                ] as const
+              ).map((f) => (
+                <Field key={f.key}>
+                  <FieldLabel htmlFor={`credits-${f.key}`}>{f.label}</FieldLabel>
+                  <Input
+                    id={`credits-${f.key}`}
+                    type={f.key === "publisherUrl" ? "url" : "text"}
+                    placeholder={f.placeholder}
+                    value={draft.credits[f.key] ?? ""}
+                    onChange={(e) => set("credits", { ...draft.credits, [f.key]: e.target.value || null })}
+                    disabled={disabled}
+                  />
+                </Field>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <aside className="flex flex-col gap-4 lg:sticky lg:top-20 lg:self-start">

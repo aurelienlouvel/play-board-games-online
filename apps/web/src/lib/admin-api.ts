@@ -4,7 +4,7 @@ const MESSAGES: Record<string, string> = {
   SANITY_TOKEN_MISSING: "Ajoutez SANITY_API_WRITE_TOKEN pour enregistrer dans Sanity.",
   SANITY_NOT_CONFIGURED: "Sanity n'est pas configuré (NEXT_PUBLIC_SANITY_PROJECT_ID).",
   INVALID_COLOR: "Une couleur n'est pas au format #rrggbb.",
-  INVALID_URL: "Le lien PDF doit commencer par http(s)://.",
+  INVALID_URL: "Les liens doivent commencer par http(s)://.",
   EMPTY_TITLE: "Le titre est obligatoire.",
   EMPTY_TEXT: "La tâche est vide.",
   INVALID_FILE: "Choisissez une image.",

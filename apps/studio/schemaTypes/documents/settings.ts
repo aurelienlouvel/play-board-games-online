@@ -17,6 +17,7 @@ export const settings = defineType({
     { name: "players", title: "Players" },
     { name: "theme", title: "Theme" },
     { name: "rules", title: "Rules" },
+    { name: "credits", title: "Credits" },
   ],
   fields: [
     defineField({ name: "title", title: "Title", type: "string", group: "identity" }),
@@ -41,6 +42,10 @@ export const settings = defineType({
     defineField({ name: "displayFont", title: "Display font", type: "string", group: "theme", options: { list: [...FONT_CHOICES] } }),
     defineField({ name: "rulesPdfFr", title: "Rules PDF (FR)", type: "url", group: "rules" }),
     defineField({ name: "rulesPdfEn", title: "Rules PDF (EN)", type: "url", group: "rules" }),
+    defineField({ name: "creditsAuthors", title: "Game authors", description: "Footer: “a game by …”", type: "string", group: "credits" }),
+    defineField({ name: "creditsIllustrator", title: "Illustrator", type: "string", group: "credits" }),
+    defineField({ name: "publisher", title: "Publisher", type: "string", group: "credits" }),
+    defineField({ name: "publisherUrl", title: "Publisher game page", type: "url", group: "credits" }),
   ],
   preview: { prepare: () => ({ title: "Settings" }) },
 })

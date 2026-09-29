@@ -23,7 +23,7 @@ function refresh() {
 }
 
 const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "")
-const pdf = (v: unknown) => {
+const httpUrl = (v: unknown) => {
   const s = text(v, 500)
   if (!s) return null
   if (!/^https?:\/\/\S+$/.test(s)) throw new ApiError("INVALID_URL")
@@ -48,8 +48,12 @@ export async function saveSettings(input: Partial<SiteSettings>) {
   const optional: Record<string, string | null> = {
     bodyFont: isFont(input.bodyFont) ? input.bodyFont : null,
     displayFont: isFont(input.displayFont) ? input.displayFont : null,
-    rulesPdfFr: pdf(input.rulesPdf?.fr),
-    rulesPdfEn: pdf(input.rulesPdf?.en),
+    rulesPdfFr: httpUrl(input.rulesPdf?.fr),
+    rulesPdfEn: httpUrl(input.rulesPdf?.en),
+    creditsAuthors: text(input.credits?.authors, 160) || null,
+    creditsIllustrator: text(input.credits?.illustrator, 160) || null,
+    publisher: text(input.credits?.publisher, 80) || null,
+    publisherUrl: httpUrl(input.credits?.publisherUrl),
   }
   for (const [k, v] of Object.entries(optional)) {
     if (v) set[k] = v

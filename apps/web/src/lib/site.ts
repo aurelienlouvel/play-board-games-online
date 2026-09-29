@@ -17,10 +17,9 @@ export const KEYWORDS = ["jeu de cartes en ligne", "jeu de société en ligne", 
 
 
 
-export const AUTHOR = { name: "oré", url: "https://ore.today" }
+export const AUTHOR = { name: "oré", signature: "oré ˖ ࣪⊹", url: "https://ore.today" }
 
 export const GENRES = ["Jeu de cartes", "Jeu de plis"]
 
 export const CONTACT = "louvel.aurelien.pro@gmail.com"
 
-export const CREDITS: { game: string; authors: string; editor: { name: string; url: string } } | null = null

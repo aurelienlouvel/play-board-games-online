@@ -3,12 +3,12 @@
 import { CheckIcon, CopyIcon, Loader2Icon } from "lucide-react"
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { motion } from "motion/react"
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { toast } from "sonner"
 import { Logo } from "@/components/logo"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 import { useSiteSettings } from "@/components/settings-provider"
-import { AUTHOR, CONTACT, CREDITS } from "@/lib/site"
+import { AUTHOR, CONTACT } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 export function Screen({
@@ -164,24 +164,42 @@ export function Paragraph({ children, className }: { children: React.ReactNode; 
 }
 
 function Footer() {
+  const { title, credits } = useSiteSettings()
   const link = "underline decoration-foreground/30 underline-offset-2 hover:text-foreground"
+  const publisher = credits.publisher ? (
+    credits.publisherUrl ? (
+      <a href={credits.publisherUrl} target="_blank" rel="noreferrer" className={link}>
+        {credits.publisher}
+      </a>
+    ) : (
+      credits.publisher
+    )
+  ) : null
+  const parts = [
+    credits.authors && <>un jeu de {credits.authors}</>,
+    credits.illustrator && <>illustré par {credits.illustrator}</>,
+    publisher && <>édité par {publisher}</>,
+  ].filter(Boolean)
   return (
-    <footer className="shrink-0 bg-surface-dark px-4 py-5 text-center text-xs leading-relaxed text-foreground/55">
-      {CREDITS && (
+    <footer className="relative z-20 shrink-0 bg-surface-dark px-4 pt-[4vh] pb-[3vh] text-center text-xs leading-relaxed text-foreground/55">
+      {parts.length > 0 && (
         <p>
-          Adaptation en ligne non officielle et gratuite de <em>{CREDITS.game}</em>, un jeu de {CREDITS.authors}, édité par{" "}
-          <a href={CREDITS.editor.url} target="_blank" rel="noreferrer" className={link}>
-            {CREDITS.editor.name}
-          </a>
-          . Tous droits réservés à leurs auteurs et à l&apos;éditeur.
+          Adaptation en ligne non officielle et gratuite de <em>{title}</em>,{" "}
+          {parts.map((part, i) => (
+            <Fragment key={i}>
+              {i > 0 && (i === parts.length - 1 ? " et " : ", ")}
+              {part}
+            </Fragment>
+          ))}
+          . Tous droits réservés à leurs auteurs{publisher ? " et à l\u2019éditeur" : ""}.
         </p>
       )}
       <p>
         Développé par{" "}
         <a href={AUTHOR.url} target="_blank" rel="noreferrer" className={link}>
-          {AUTHOR.name}
+          {AUTHOR.signature}
         </a>{" "}
-        · Contact :{" "}
+        · Pour toute réclamation :{" "}
         <a href={`mailto:${CONTACT}`} className={link}>
           {CONTACT}
         </a>
