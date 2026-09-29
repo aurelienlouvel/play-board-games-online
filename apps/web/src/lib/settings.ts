@@ -37,7 +37,8 @@ const FONT_WEIGHTS: Record<string, string> = {
 }
 
 // Crédits du jeu original, affichés dans le pied de page (vides : pas de mention d'adaptation)
-export type Credits = { authors: string | null; illustrator: string | null; publisher: string | null; publisherUrl: string | null }
+// authors : texte libre après « un jeu de », ex. « Romaric Galonnier et Anthony Perone, illustré par Noëmie Chevalier »
+export type Credits = { authors: string | null; publisher: string | null; publisherUrl: string | null }
 
 export type ThemeColors = { background: string; foreground: string; accent: string; surface: string; surfaceDark: string }
 
@@ -82,7 +83,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   bodyFont: null,
   displayFont: null,
   rulesPdf: { fr: null, en: null },
-  credits: { authors: null, illustrator: null, publisher: null, publisherUrl: null },
+  credits: { authors: null, publisher: null, publisherUrl: null },
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/

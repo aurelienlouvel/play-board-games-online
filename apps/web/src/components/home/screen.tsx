@@ -3,7 +3,7 @@
 import { CheckIcon, CopyIcon, Loader2Icon } from "lucide-react"
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { motion } from "motion/react"
-import { Fragment, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { Logo } from "@/components/logo"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
@@ -175,23 +175,12 @@ function Footer() {
       credits.publisher
     )
   ) : null
-  const parts = [
-    credits.authors && <>un jeu de {credits.authors}</>,
-    credits.illustrator && <>illustré par {credits.illustrator}</>,
-    publisher && <>édité par {publisher}</>,
-  ].filter(Boolean)
   return (
     <footer className="relative z-20 shrink-0 bg-surface-dark px-4 pt-[4vh] pb-[3vh] text-center text-xs leading-relaxed text-foreground/55">
-      {parts.length > 0 && (
+      {credits.authors && (
         <p>
-          Adaptation en ligne non officielle et gratuite de <em>{title}</em>,{" "}
-          {parts.map((part, i) => (
-            <Fragment key={i}>
-              {i > 0 && (i === parts.length - 1 ? " et " : ", ")}
-              {part}
-            </Fragment>
-          ))}
-          . Tous droits réservés à leurs auteurs{publisher ? " et à l\u2019éditeur" : ""}.
+          Adaptation en ligne non officielle et gratuite de <em>{title}</em>, un jeu de {credits.authors}
+          {publisher && <> et édité par {publisher}</>}. Tous droits réservés à leurs auteurs{publisher ? " et à l\u2019éditeur" : ""}.
         </p>
       )}
       <p>

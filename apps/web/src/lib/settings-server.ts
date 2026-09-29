@@ -18,12 +18,11 @@ export type SettingsDoc = {
   rulesPdfFr?: string
   rulesPdfEn?: string
   creditsAuthors?: string
-  creditsIllustrator?: string
   publisher?: string
   publisherUrl?: string
 } | null
 
-export const SETTINGS_QUERY = `*[_id == "settings"][0]{ title, description, logo, minPlayers, maxPlayers, theme, bodyFont, displayFont, rulesPdfFr, rulesPdfEn, creditsAuthors, creditsIllustrator, publisher, publisherUrl }`
+export const SETTINGS_QUERY = `*[_id == "settings"][0]{ title, description, logo, minPlayers, maxPlayers, theme, bodyFont, displayFont, rulesPdfFr, rulesPdfEn, creditsAuthors, publisher, publisherUrl }`
 
 const url = (v: unknown) => (typeof v === "string" && /^https?:\/\//.test(v) ? v : null)
 
@@ -43,7 +42,6 @@ export function toSettings(doc: SettingsDoc): SiteSettings {
     rulesPdf: { fr: url(doc.rulesPdfFr), en: url(doc.rulesPdfEn) },
     credits: {
       authors: doc.creditsAuthors?.trim() || null,
-      illustrator: doc.creditsIllustrator?.trim() || null,
       publisher: doc.publisher?.trim() || null,
       publisherUrl: url(doc.publisherUrl),
     },

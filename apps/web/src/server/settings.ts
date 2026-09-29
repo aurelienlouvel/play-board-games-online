@@ -50,8 +50,7 @@ export async function saveSettings(input: Partial<SiteSettings>) {
     displayFont: isFont(input.displayFont) ? input.displayFont : null,
     rulesPdfFr: httpUrl(input.rulesPdf?.fr),
     rulesPdfEn: httpUrl(input.rulesPdf?.en),
-    creditsAuthors: text(input.credits?.authors, 160) || null,
-    creditsIllustrator: text(input.credits?.illustrator, 160) || null,
+    creditsAuthors: text(input.credits?.authors, 240) || null,
     publisher: text(input.credits?.publisher, 80) || null,
     publisherUrl: httpUrl(input.credits?.publisherUrl),
   }

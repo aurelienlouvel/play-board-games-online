@@ -316,34 +316,49 @@ export function SettingsForm({ initial, meta }: { initial: SiteSettings; meta: M
         <Card>
           <CardHeader>
             <CardTitle>Crédits du jeu</CardTitle>
-            <CardDescription>
-              Affichés dans le pied de page : « Adaptation en ligne non officielle et gratuite de {draft.title || "…"}, un jeu de …, illustré par … et édité par … ». Laisser vide pour
-              un jeu original.
-            </CardDescription>
+            <CardDescription>Affichés dans le pied de page. Laisser « Un jeu de » vide pour un jeu original.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {(
-                [
-                  { key: "authors", label: "Auteurs", placeholder: "Romaric Galonnier et Anthony Perone" },
-                  { key: "illustrator", label: "Illustration", placeholder: "Noëmie Chevalier" },
-                  { key: "publisher", label: "Éditeur", placeholder: "Catch Up Games" },
-                  { key: "publisherUrl", label: "Page du jeu chez l'éditeur", placeholder: "https://…" },
-                ] as const
-              ).map((f) => (
-                <Field key={f.key}>
-                  <FieldLabel htmlFor={`credits-${f.key}`}>{f.label}</FieldLabel>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="credits-authors">Un jeu de</FieldLabel>
+                <Input
+                  id="credits-authors"
+                  placeholder="Romaric Galonnier et Anthony Perone, illustré par Noëmie Chevalier"
+                  value={draft.credits.authors ?? ""}
+                  onChange={(e) => set("credits", { ...draft.credits, authors: e.target.value || null })}
+                  disabled={disabled}
+                />
+              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="credits-publisher">Éditeur</FieldLabel>
                   <Input
-                    id={`credits-${f.key}`}
-                    type={f.key === "publisherUrl" ? "url" : "text"}
-                    placeholder={f.placeholder}
-                    value={draft.credits[f.key] ?? ""}
-                    onChange={(e) => set("credits", { ...draft.credits, [f.key]: e.target.value || null })}
+                    id="credits-publisher"
+                    placeholder="Catch Up Games"
+                    value={draft.credits.publisher ?? ""}
+                    onChange={(e) => set("credits", { ...draft.credits, publisher: e.target.value || null })}
                     disabled={disabled}
                   />
                 </Field>
-              ))}
-            </div>
+                <Field>
+                  <FieldLabel htmlFor="credits-url">Site de l&apos;éditeur</FieldLabel>
+                  <Input
+                    id="credits-url"
+                    type="url"
+                    placeholder="https://catchupgames.com/nos-jeux/courtisans/"
+                    value={draft.credits.publisherUrl ?? ""}
+                    onChange={(e) => set("credits", { ...draft.credits, publisherUrl: e.target.value || null })}
+                    disabled={disabled}
+                  />
+                </Field>
+              </div>
+              <p className="rounded-xl bg-muted/60 p-3 text-xs leading-relaxed text-muted-foreground">
+                {draft.credits.authors
+                  ? `Adaptation en ligne non officielle et gratuite de ${draft.title || "…"}, un jeu de ${draft.credits.authors}${draft.credits.publisher ? ` et édité par ${draft.credits.publisher}` : ""}. Tous droits réservés à leurs auteurs${draft.credits.publisher ? " et à l’éditeur" : ""}.`
+                  : "Jeu original : seule la ligne « Développé par oré » est affichée."}
+              </p>
+            </FieldGroup>
           </CardContent>
         </Card>
       </div>
