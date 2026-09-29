@@ -1,18 +1,18 @@
-import { Accueil } from "@/components/accueil/accueil"
-import { chargerRegles } from "@/lib/regles-serveur"
-import { AUTEUR, DESCRIPTION, GENRES, NOM, SITE_URL, TITRE } from "@/lib/site"
-import { JEU } from "@jeu/engine"
+import { Home } from "@/components/home/home"
+import { loadRules } from "@/lib/rules-server"
+import { AUTHOR, DESCRIPTION, GENRES, NAME, SITE_URL, TITLE } from "@/lib/site"
+import { GAME } from "@game/engine"
 
 export const revalidate = 60
 
-const DONNEES_STRUCTUREES = {
+const STRUCTURED_DATA = {
   "@context": "https://schema.org",
   "@graph": [
-    { "@type": "WebSite", "@id": `${SITE_URL}/#site`, url: SITE_URL, name: TITRE, inLanguage: "fr-FR", description: DESCRIPTION },
+    { "@type": "WebSite", "@id": `${SITE_URL}/#site`, url: SITE_URL, name: TITLE, inLanguage: "fr-FR", description: DESCRIPTION },
     {
       "@type": "VideoGame",
-      name: NOM,
-      alternateName: TITRE,
+      name: NAME,
+      alternateName: TITLE,
       url: SITE_URL,
       description: DESCRIPTION,
       inLanguage: "fr-FR",
@@ -20,19 +20,19 @@ const DONNEES_STRUCTUREES = {
       gamePlatform: "Navigateur web",
       applicationCategory: "Game",
       playMode: "MultiPlayer",
-      numberOfPlayers: { "@type": "QuantitativeValue", minValue: JEU.joueursMin, maxValue: JEU.joueursMax },
+      numberOfPlayers: { "@type": "QuantitativeValue", minValue: GAME.minPlayers, maxValue: GAME.maxPlayers },
       offers: { "@type": "Offer", price: 0, priceCurrency: "EUR" },
-      author: { "@type": "Person", name: AUTEUR.nom, url: AUTEUR.url },
+      author: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
     },
   ],
 }
 
-export default async function Home() {
+export default async function HomePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES) }} />
-      <h1 className="sr-only">{TITRE}</h1>
-      <Accueil regles={await chargerRegles()} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }} />
+      <h1 className="sr-only">{TITLE}</h1>
+      <Home rules={await loadRules()} />
     </>
   )
 }

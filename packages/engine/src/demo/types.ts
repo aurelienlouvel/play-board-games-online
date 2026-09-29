@@ -1,51 +1,51 @@
-import type { Resultats } from "../contrat"
+import type { Results } from "../contract"
 
-export const COULEURS = ["soleil", "lune", "etoile", "comete"] as const
-export type Couleur = (typeof COULEURS)[number]
-export const VALEUR_MAX = 10
+export const CARD_COLORS = ["sun", "moon", "star", "comet"] as const
+export type CardColor = (typeof CARD_COLORS)[number]
+export const MAX_VALUE = 10
 
-export type Carte = { id: string; couleur: Couleur; valeur: number }
+export type Card = { id: string; color: CardColor; value: number }
 
-export type CartePosee = { joueurId: string; carte: Carte }
+export type PlayedCard = { playerId: string; card: Card }
 
-export type JoueurEtat = {
+export type PlayerState = {
   id: string
-  pseudo: string
-  main: Carte[]
-  pointsParManche: number[]
+  nickname: string
+  hand: Card[]
+  pointsPerRound: number[]
 }
 
-export type Evenement =
-  | { type: "carteJouee"; joueurId: string; carte: Carte }
-  | { type: "pliRemporte"; joueurId: string; cartes: Carte[] }
-  | { type: "nouvelleManche"; manche: number }
+export type GameEvent =
+  | { type: "cardPlayed"; playerId: string; card: Card }
+  | { type: "trickWon"; playerId: string; cards: Card[] }
+  | { type: "newRound"; round: number }
 
-export type OptionsDemo = { manches: number; tailleMain: number; inverse: boolean }
+export type DemoOptions = { rounds: number; handSize: number; inverse: boolean }
 
-export type Etat = {
-  graine: number
-  options: OptionsDemo
-  joueurs: JoueurEtat[]
-  manche: number
-  entameurManche: number
-  joueurActif: number
-  pli: CartePosee[]
-  dernierPli: { cartes: CartePosee[]; gagnantId: string } | null
-  phase: "jeu" | "fin"
-  journal: Evenement[]
+export type State = {
+  seed: number
+  options: DemoOptions
+  players: PlayerState[]
+  round: number
+  roundLeader: number
+  activePlayer: number
+  trick: PlayedCard[]
+  lastTrick: { cards: PlayedCard[]; winnerId: string } | null
+  phase: "playing" | "over"
+  log: GameEvent[]
 }
 
-export type Action = { type: "jouerCarte"; joueurId: string; carteId: string }
+export type Action = { type: "playCard"; playerId: string; cardId: string }
 
-export type VueJoueur = {
-  phase: Etat["phase"]
-  options: OptionsDemo
-  manche: number
-  moi: { id: string; main: Carte[] } | null
-  joueurs: { id: string; pseudo: string; nbCartes: number; points: number; pointsParManche: number[] }[]
-  joueurActifId: string | null
-  pli: CartePosee[]
-  dernierPli: Etat["dernierPli"]
-  journal: Evenement[]
-  resultats: Resultats | null
+export type PlayerView = {
+  phase: State["phase"]
+  options: DemoOptions
+  round: number
+  me: { id: string; hand: Card[] } | null
+  players: { id: string; nickname: string; cardCount: number; points: number; pointsPerRound: number[] }[]
+  activePlayerId: string | null
+  trick: PlayedCard[]
+  lastTrick: State["lastTrick"]
+  log: GameEvent[]
+  results: Results | null
 }

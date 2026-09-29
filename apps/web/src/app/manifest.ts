@@ -1,15 +1,15 @@
 import type { MetadataRoute } from "next"
-import { COULEUR, DESCRIPTION, NOM, TITRE } from "@/lib/site"
+import { COLOR, DESCRIPTION, NAME, TITLE } from "@/lib/site"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: TITRE,
-    short_name: NOM,
+    name: TITLE,
+    short_name: NAME,
     description: DESCRIPTION,
     start_url: "/",
     display: "standalone",
-    background_color: COULEUR,
-    theme_color: COULEUR,
+    background_color: COLOR,
+    theme_color: COLOR,
     lang: "fr",
   }
 }

@@ -3,11 +3,17 @@
 Base commune des jeux de société en ligne (`<slug>-online`). La démo « La Plus Haute » (jeu de plis minimal) montre le contrat moteur ↔ web ; on la remplace par le vrai jeu.
 
 ## Conventions de code
-Code en anglais avec peu de commentaires
-Mots "métier" en français (`partie`, `joueur`, `manche`, `pli`, `carte`, `options`, `vue`, `etat`…)
+- **Tout le code est en anglais**, vocabulaire du jeu compris : fonctions, variables, types, fichiers, dossiers, routes API, URL, tables/colonnes SQL, clés de stockage, codes d'erreur, commentaires.
+- **Prévu pour le multilingue** : seuls les textes affichés au joueur sont en français (Sanity `{ fr, en }` lus avec `translate()`, ou textes d'interface dans les composants en attendant des dictionnaires `fr` / `en`). Jamais de mot français dans un identifiant.
+- Peu de commentaires, noms explicites.
+- Glossaire du jeu (FR → EN), à compléter pour chaque nouveau jeu :
+  - partie → `game` · joueur → `player` · pseudo → `nickname` · hôte → `host` · moi → `me`
+  - manche → `round` · tour → `turn` · pli → `trick` · main → `hand` · paquet/pioche → `deck` · carte → `card`
+  - vue → `view` · état → `state` · résultats → `results` · vainqueur → `winner` · journal → `log`
+  - règles → `rules` · réglages → `settings` · annonce → `announcement` · partage → `sharing` · tâche → `task`
 
 ## Assets
-Fichiers dans `apps/web/public` nommés en anglais, `EN_MAJUSCULES_AVEC_DES_TIRETS_DU_BAS` (ex. `cards/BACK.webp`), dossiers en anglais minuscules.
+Fichiers dans `apps/web/public` nommés en anglais, `UPPER_SNAKE_CASE` (ex. `cards/BACK.webp`), dossiers en anglais minuscules.
 
 ## Stack technique
 - Next.js 16 (App Router, React 19), Tailwind 4, shadcn/ui, motion, sonner
@@ -17,37 +23,39 @@ Fichiers dans `apps/web/public` nommés en anglais, `EN_MAJUSCULES_AVEC_DES_TIRE
 - Vitest pour le moteur · pnpm workspaces · Vercel
 
 ## Structure
-- `packages/engine` (`@jeu/engine`) — moteur pur TypeScript, sans UI
-  - `contrat.ts` : `DefinitionJeu<Etat, Action, Vue>` (setup, appliquer, vue, termine, options, actionsClient, debug)
-  - `options.ts` : options de partie déclaratives (`nombre` / `choix` / `booleen`), `normaliserOptions`
-  - `demo/` : le jeu démo ; `index.ts` exporte `JEU` = le jeu actif
-- `apps/web` — front Next.js
-  - `server/parties.ts` : création, `nouvellePartie`, vue publique ; routes `api/parties/[code]/*`
-  - `components/partie` : lobby + options (rendues automatiquement depuis `JEU.options`, éditables par l'hôte)
-  - `components/jeu` : `jeu.tsx` (table, annonces, debug), `fin-de-partie.tsx`, `partage.ts` (image de résultat)
-  - `components/jeu3d` : scène (`scene.tsx`), poses (`disposition.ts`), textures, annonces, debug leva
-  - `app/to-do` + `api/taches` : to-do du projet (Supabase, protégée par `TODO_PASSWORD`)
+- `packages/engine` (`@game/engine`) — moteur pur TypeScript, sans UI
+  - `contract.ts` : `GameDefinition<State, Action, View>` (`setup`, `apply`, `view`, `isOver`, `options`, `clientActions`, `debug`)
+  - `options.ts` : options de partie déclaratives (`number` / `choice` / `boolean`), `defaultOptions`, `normalizeOptions`
+  - `demo/` : le jeu démo ; `index.ts` exporte `GAME` = le jeu actif
+- `apps/web/src`
+  - `server/games.ts` : `createGame`, `newGame`, `updateGame` (verrou optimiste), `publicGame` ; routes `app/api/games/[code]/*`
+  - `components/home` : accueil (`home.tsx`) et primitives d'écran (`screen.tsx`)
+  - `components/lobby` : `lobby.tsx`, `game-options.tsx` (rendues depuis `GAME.options`, éditables par l'hôte)
+  - `components/game` : `game-client.tsx` (lobby → jeu), `game.tsx` (table, annonces, debug), `game-over.tsx`, `sharing.ts`, `preview-sharing.tsx`
+  - `components/game3d` : `scene.tsx`, poses (`layout.ts`), `card3d.tsx`, textures, annonces, debug leva
+  - `app/to-do` + `app/api/tasks` : to-do du projet (Supabase, protégée par `TODO_PASSWORD`)
   - `lib/site.ts` : nom, slug, SEO, couleurs du jeu
 - `apps/studio` — Sanity Studio (singletons `interface`, `game`, `rules`, `texts`)
-- `supabase/migrations` — `0001_parties.sql`, `0002_taches.sql`
+- `supabase/migrations` — `0001_games.sql`, `0002_tasks.sql`
 
 ## Adapter à un nouveau jeu
-1. Écrire le moteur dans `packages/engine/src/<jeu>/` (types, `DefinitionJeu`, tests) puis `export { monJeu as JEU }` dans `index.ts`
-2. Déclarer les options de partie dans `options` du `DefinitionJeu` : le lobby les affiche seul
-3. Adapter `lib/site.ts`, `globals.css` (tokens `--background`, `--accent-jeu`, `--surface`…), puis la scène 3D et `jeu.tsx`
+1. Écrire le moteur dans `packages/engine/src/<game>/` (types, `GameDefinition`, tests) puis `export { myGame as GAME }` dans `index.ts`
+2. Déclarer les options de partie dans `options` : le lobby les affiche seul
+3. Adapter `lib/site.ts`, `globals.css` (tokens `--background`, `--accent-game`, `--surface`…), puis `game3d/scene.tsx`, `layout.ts` et `game/game.tsx`
 4. Remplacer `__SANITY_PROJECT_ID__` / `__SANITY_STUDIO_HOST__` (fait par `setup-games.sh`)
+5. Compléter le glossaire ci-dessus
 
 ## Supabase (temps réel)
-- Table `parties`, RLS activée sans policy : seul le serveur (clé service role) la lit/écrit
-- `etat` = état complet du moteur (secret) ; les clients reçoivent uniquement `JEU.vue(etat, joueurId)` via `GET /api/parties/[code]`
-- Après chaque écriture (verrou optimiste sur `version`), le serveur diffuse `maj` sur `partie:{code}` ; le client refetch
-- Identité joueur = cookie httpOnly `<slug>_joueur`
-- Routes : `POST /api/parties`, `GET /api/parties/[code]`, `POST .../rejoindre|quitter|options|lancer|action|rejouer|debug`
+- Table `games` (`code`, `host_id`, `status`, `players`, `options`, `state`, `replay`, `version`), RLS activée sans policy : seul le serveur (clé service role) la lit/écrit
+- `state` = état complet du moteur (secret) ; les clients reçoivent uniquement `GAME.view(state, playerId)` via `GET /api/games/[code]`
+- Après chaque écriture, le serveur diffuse `maj` sur `game:{code}` ; le client refetch
+- Identité joueur = cookie httpOnly `<slug>_player`
+- Routes : `POST /api/games`, `GET /api/games/[code]`, `POST .../join|leave|options|start|action|replay|debug`
 
 ## Principes
 - Le serveur est la seule source de vérité ; chaque joueur ne reçoit qu'une vue filtrée
 - Les règles du jeu vivent uniquement dans le moteur
-- `debug` (START / NEXT TURN / END) désactivé en production sauf `DEBUG_PARTIES=1`
+- `debug` (START / NEXT TURN / END) désactivé en production sauf `DEBUG_GAMES=1`
 
 ## Commits
 Format gitmoji : `<emoji>(<scope>): <description>`

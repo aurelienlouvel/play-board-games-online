@@ -3,21 +3,21 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Thème du jeu : changer ces variables suffit à rhabiller tout le site */
+/* Game theme: changing these variables reskins the whole site */
 :root {
   --radius: 0.75rem;
 
   --background: #13213a;
   --foreground: #f5f2ea;
-  --accent-jeu: #e8b43a;
+  --accent-game: #e8b43a;
   --surface: #1b2c4a;
-  --surface-fonce: #0d1729;
+  --surface-dark: #0d1729;
 
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: #f5f2ea;
   --popover-foreground: #13213a;
-  --primary: var(--accent-jeu);
+  --primary: var(--accent-game);
   --primary-foreground: #13213a;
   --secondary: #f5f2ea;
   --secondary-foreground: #13213a;
@@ -26,9 +26,9 @@
   --accent: #22355a;
   --accent-foreground: var(--foreground);
   --destructive: oklch(0.58 0.2 25);
-  --border: color-mix(in oklab, var(--accent-jeu) 35%, transparent);
+  --border: color-mix(in oklab, var(--accent-game) 35%, transparent);
   --input: color-mix(in oklab, var(--foreground) 35%, transparent);
-  --ring: var(--accent-jeu);
+  --ring: var(--accent-game);
 }
 
 @theme inline {
@@ -37,8 +37,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
-  --color-surface-fonce: var(--surface-fonce);
-  --color-jeu: var(--accent-jeu);
+  --color-surface-dark: var(--surface-dark);
+  --color-accent-game: var(--accent-game);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -70,7 +70,7 @@
   }
 }
 
-.fond {
+.game-bg {
   background:
     radial-gradient(120% 80% at 50% 40%, color-mix(in oklab, var(--background), white 14%) 0%, var(--background) 70%),
     var(--background);

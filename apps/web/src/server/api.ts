@@ -1,5 +1,5 @@
 import "server-only"
-import { EngineError } from "@jeu/engine"
+import { EngineError } from "@game/engine"
 
 export class ApiError extends Error {
   constructor(
@@ -15,18 +15,18 @@ export function handle<A extends unknown[]>(fn: (...args: A) => Promise<unknown>
     try {
       return Response.json(await fn(...args))
     } catch (error) {
-      if (error instanceof ApiError) return Response.json({ erreur: error.code }, { status: error.status })
-      if (error instanceof EngineError) return Response.json({ erreur: error.code }, { status: 400 })
+      if (error instanceof ApiError) return Response.json({ error: error.code }, { status: error.status })
+      if (error instanceof EngineError) return Response.json({ error: error.code }, { status: 400 })
       console.error(error)
-      return Response.json({ erreur: "ERREUR_SERVEUR" }, { status: 500 })
+      return Response.json({ error: "SERVER_ERROR" }, { status: 500 })
     }
   }
 }
 
-export async function lireJson<T>(request: Request): Promise<T> {
+export async function readJson<T>(request: Request): Promise<T> {
   try {
     return (await request.json()) as T
   } catch {
-    throw new ApiError("REQUETE_INVALIDE")
+    throw new ApiError("INVALID_REQUEST")
   }
 }

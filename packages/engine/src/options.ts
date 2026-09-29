@@ -1,33 +1,33 @@
-export type DefinitionOption =
-  | { type: "nombre"; label: string; aide?: string; defaut: number; min: number; max: number; pas?: number }
-  | { type: "choix"; label: string; aide?: string; defaut: string; choix: { valeur: string; label: string }[] }
-  | { type: "booleen"; label: string; aide?: string; defaut: boolean }
+export type OptionDefinition =
+  | { type: "number"; label: string; help?: string; defaultValue: number; min: number; max: number; step?: number }
+  | { type: "choice"; label: string; help?: string; defaultValue: string; choices: { value: string; label: string }[] }
+  | { type: "boolean"; label: string; help?: string; defaultValue: boolean }
 
-export type DefinitionsOptions = Record<string, DefinitionOption>
+export type OptionDefinitions = Record<string, OptionDefinition>
 
-export type ValeurOption = number | string | boolean
-export type ValeursOptions = Record<string, ValeurOption>
+export type OptionValue = number | string | boolean
+export type OptionValues = Record<string, OptionValue>
 
-export function optionsParDefaut(definitions: DefinitionsOptions): ValeursOptions {
-  return Object.fromEntries(Object.entries(definitions).map(([cle, def]) => [cle, def.defaut]))
+export function defaultOptions(definitions: OptionDefinitions): OptionValues {
+  return Object.fromEntries(Object.entries(definitions).map(([key, def]) => [key, def.defaultValue]))
 }
 
-export function normaliserOptions(definitions: DefinitionsOptions, entree: unknown): ValeursOptions {
-  const brut = entree && typeof entree === "object" ? (entree as Record<string, unknown>) : {}
+export function normalizeOptions(definitions: OptionDefinitions, entry: unknown): OptionValues {
+  const raw = entry && typeof entry === "object" ? (entry as Record<string, unknown>) : {}
   return Object.fromEntries(
-    Object.entries(definitions).map(([cle, def]) => {
-      const v = brut[cle]
+    Object.entries(definitions).map(([key, def]) => {
+      const v = raw[key]
       switch (def.type) {
-        case "nombre": {
-          const n = typeof v === "number" && Number.isFinite(v) ? v : def.defaut
-          const pas = def.pas ?? 1
-          const arrondi = Math.round((n - def.min) / pas) * pas + def.min
-          return [cle, Math.min(def.max, Math.max(def.min, arrondi))]
+        case "number": {
+          const n = typeof v === "number" && Number.isFinite(v) ? v : def.defaultValue
+          const step = def.step ?? 1
+          const rounded = Math.round((n - def.min) / step) * step + def.min
+          return [key, Math.min(def.max, Math.max(def.min, rounded))]
         }
-        case "choix":
-          return [cle, typeof v === "string" && def.choix.some((c) => c.valeur === v) ? v : def.defaut]
-        case "booleen":
-          return [cle, typeof v === "boolean" ? v : def.defaut]
+        case "choice":
+          return [key, typeof v === "string" && def.choices.some((c) => c.value === v) ? v : def.defaultValue]
+        case "boolean":
+          return [key, typeof v === "boolean" ? v : def.defaultValue]
       }
     }),
   )

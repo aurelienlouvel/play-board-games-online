@@ -1,18 +1,18 @@
-import type { ValeursOptions } from "@jeu/engine"
-import type { PartiePublique } from "./partie-types"
+import type { OptionValues } from "@game/engine"
+import type { PublicGame } from "./game-types"
 
 const MESSAGES: Record<string, string> = {
-  PSEUDO_INVALIDE: "Choisissez un pseudo.",
-  CODE_INVALIDE: "Ce code de partie n'est pas valide.",
-  PARTIE_INTROUVABLE: "Aucune partie ne correspond à ce code.",
-  PARTIE_EN_COURS: "Cette partie a déjà commencé.",
-  PARTIE_COMPLETE: "Cette partie est complète.",
-  RESERVE_A_L_HOTE: "Seul l'hôte peut faire ça.",
-  PAS_ASSEZ_DE_JOUEURS: "Il manque des joueurs pour lancer la partie.",
-  PAS_TON_TOUR: "Ce n'est pas votre tour.",
-  CARTE_INCONNUE: "Cette carte n'est pas dans votre main.",
-  CONFLIT: "Quelqu'un a joué en même temps, réessayez.",
-  DEBUG_DESACTIVE: "Le debug est désactivé sur ce serveur (DEBUG_PARTIES=1).",
+  INVALID_NICKNAME: "Choisissez un pseudo.",
+  INVALID_CODE: "Ce code de partie n'est pas valide.",
+  GAME_NOT_FOUND: "Aucune partie ne correspond à ce code.",
+  GAME_IN_PROGRESS: "Cette partie a déjà commencé.",
+  GAME_FULL: "Cette partie est complète.",
+  HOST_ONLY: "Seul l'hôte peut faire ça.",
+  NOT_ENOUGH_PLAYERS: "Il manque des joueurs pour lancer la partie.",
+  NOT_YOUR_TURN: "Ce n'est pas votre tour.",
+  UNKNOWN_CARD: "Cette carte n'est pas dans votre main.",
+  CONFLICT: "Quelqu'un a joué en même temps, réessayez.",
+  DEBUG_DISABLED: "Le debug est désactivé sur ce serveur (DEBUG_GAMES=1).",
 }
 
 export class ApiClientError extends Error {
@@ -21,28 +21,28 @@ export class ApiClientError extends Error {
   }
 }
 
-async function requete(path: string, init?: RequestInit): Promise<PartiePublique> {
+async function apiRequest(path: string, init?: RequestInit): Promise<PublicGame> {
   const response = await fetch(path, { ...init, headers: { "Content-Type": "application/json" }, cache: "no-store" })
-  const data = await response.json().catch(() => ({ erreur: "ERREUR_SERVEUR" }))
-  if (!response.ok) throw new ApiClientError(data.erreur ?? "ERREUR_SERVEUR")
-  return data as PartiePublique
+  const data = await response.json().catch(() => ({ error: "SERVER_ERROR" }))
+  if (!response.ok) throw new ApiClientError(data.error ?? "SERVER_ERROR")
+  return data as PublicGame
 }
 
-const post = (path: string, body?: unknown) => requete(path, { method: "POST", body: JSON.stringify(body ?? {}) })
+const post = (path: string, body?: unknown) => apiRequest(path, { method: "POST", body: JSON.stringify(body ?? {}) })
 
-export type Profil = { pseudo: string }
-export type CommandeDebugClient = "debut" | "tour" | "fin"
+export type Profile = { nickname: string }
+export type ClientDebugCommand = "start" | "turn" | "over"
 
 export const api = {
-  creer: (profil: Profil) => post("/api/parties", profil),
-  lire: (code: string) => requete(`/api/parties/${code}`),
-  rejoindre: (code: string, profil: Profil) => post(`/api/parties/${code}/rejoindre`, profil),
-  quitter: (code: string) => post(`/api/parties/${code}/quitter`),
-  options: (code: string, options: ValeursOptions) => post(`/api/parties/${code}/options`, { options }),
-  lancer: (code: string) => post(`/api/parties/${code}/lancer`),
-  action: (code: string, action: { type: string } & Record<string, unknown>) => post(`/api/parties/${code}/action`, action),
-  rejouer: (code: string) => post(`/api/parties/${code}/rejouer`),
-  debug: (code: string, commande: CommandeDebugClient) => post(`/api/parties/${code}/debug`, { commande }),
+  create: (profile: Profile) => post("/api/games", profile),
+  read: (code: string) => apiRequest(`/api/games/${code}`),
+  join: (code: string, profile: Profile) => post(`/api/games/${code}/join`, profile),
+  leave: (code: string) => post(`/api/games/${code}/leave`),
+  options: (code: string, options: OptionValues) => post(`/api/games/${code}/options`, { options }),
+  start: (code: string) => post(`/api/games/${code}/start`),
+  action: (code: string, action: { type: string } & Record<string, unknown>) => post(`/api/games/${code}/action`, action),
+  replay: (code: string) => post(`/api/games/${code}/replay`),
+  debug: (code: string, command: ClientDebugCommand) => post(`/api/games/${code}/debug`, { command }),
 }
 
-export const lienPartie = (code: string) => `${window.location.origin}/partie/${code}`
+export const gameLink = (code: string) => `${window.location.origin}/game/${code}`

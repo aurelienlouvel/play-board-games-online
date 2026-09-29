@@ -12,7 +12,7 @@
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.5",
     "@hugeicons/react": "^1.1.10",
-    "@jeu/engine": "workspace:*",
+    "@game/engine": "workspace:*",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@sanity/client": "^7.27.0",

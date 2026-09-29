@@ -1,11 +1,11 @@
-export const LANGUES = ["fr", "en"] as const
-export type Langue = (typeof LANGUES)[number]
+export const LOCALES = ["fr", "en"] as const
+export type Locale = (typeof LOCALES)[number]
 
-export const LANGUE_PAR_DEFAUT: Langue = "fr"
+export const DEFAULT_LOCALE: Locale = "fr"
 
-export type Localise<T = string> = Partial<Record<Langue, T | null>> | null | undefined
+export type Localized<T = string> = Partial<Record<Locale, T | null>> | null | undefined
 
-export function traduire<T>(valeur: Localise<T>, langue: Langue = LANGUE_PAR_DEFAUT): T | undefined {
-  if (!valeur) return undefined
-  return valeur[langue] ?? valeur[LANGUE_PAR_DEFAUT] ?? LANGUES.map((l) => valeur[l]).find((v) => v != null) ?? undefined
+export function translate<T>(value: Localized<T>, locale: Locale = DEFAULT_LOCALE): T | undefined {
+  if (!value) return undefined
+  return value[locale] ?? value[DEFAULT_LOCALE] ?? LOCALES.map((l) => value[l]).find((v) => v != null) ?? undefined
 }

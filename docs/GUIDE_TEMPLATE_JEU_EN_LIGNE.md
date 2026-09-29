@@ -1,4 +1,4 @@
-# Guide template — Jeu de société en ligne (base : Courtisans Online)
+# Guide template — Jeu de société en ligne (base : play-game-online-template)
 
 Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **template** d'autres jeux de société multijoueurs en ligne. Il est destiné à **Oré** (porteur du projet, designer) et à **Claude** (l'IA qui code). Chaque section indique clairement **qui fait quoi**.
 
@@ -26,58 +26,53 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 
 ## 2. Architecture (les principes à garder dans chaque jeu)
 
-1. **Le moteur est la seule source des règles.** Tout ce qui est règle (setup, tour, actions légales, score, fin) vit dans `packages/engine`, en TypeScript pur, testé. Le front et le serveur ne font qu'appeler le moteur.
-2. **Serveur autoritaire.** Le client n'envoie que des *intentions* (`POST /api/parties/[code]/action`). Le serveur charge l'état, appelle le moteur, sauvegarde, diffuse.
-3. **Vue filtrée par joueur.** L'état complet (`GameState`) est secret (mains, cartes cachées, missions). Chaque joueur reçoit uniquement `vueJoueur(state, joueurId)` via `GET /api/parties/[code]`.
-4. **Temps réel "ping + refetch".** Après chaque écriture (verrou optimiste sur `version`), le serveur diffuse `maj` sur le canal Supabase `partie:{code}` ; les clients refetch leur vue. Pas de données sensibles dans le canal.
-5. **Identité sans compte.** Cookie httpOnly (`courtisans_joueur`) = id joueur. Pseudo + avatar/château stockés dans le profil local.
-6. **Contenu dans Sanity, valeurs par défaut dans le code.** Le site fonctionne même si Sanity est vide (`CATALOGUE_PAR_DEFAUT`), Sanity surcharge.
-7. **3D = présentation seulement.** `disposition.ts` calcule des *poses* (position/rotation) pour chaque carte selon la vue ; `scene.tsx` anime chaque objet vers sa pose. Même clé React = même objet ⇒ vrais trajets (main → table).
-8. **UI DOM par-dessus la 3D** (bandeau, journal, annonces, fin de partie, règles).
+1. **Le moteur est la seule source des règles.** Tout ce qui est règle (setup, tour, actions légales, score, fin) vit dans `packages/engine`, en TypeScript pur, testé. Il implémente le contrat `GameDefinition<State, Action, View>` (`setup`, `apply`, `view`, `isOver`, `options`, `clientActions`, `debug`). Le front et le serveur ne font qu'appeler `GAME`.
+2. **Serveur autoritaire.** Le client n'envoie que des *intentions* (`POST /api/games/[code]/action`). Le serveur charge l'état, appelle le moteur, sauvegarde, diffuse.
+3. **Vue filtrée par joueur.** L'état complet (`State`) est secret (mains, cartes cachées). Chaque joueur reçoit uniquement `GAME.view(state, playerId)` via `GET /api/games/[code]`.
+4. **Temps réel "ping + refetch".** Après chaque écriture (verrou optimiste sur `version`), le serveur diffuse `maj` sur le canal Supabase `game:{code}` ; les clients refetch leur vue. Pas de données sensibles dans le canal.
+5. **Identité sans compte.** Cookie httpOnly (`<slug>_player`) = id joueur. Pseudo stocké dans le profil local (`<slug>:profile`).
+6. **Options de partie déclaratives.** Le jeu déclare `options` (`number` / `choice` / `boolean`) ; le lobby les affiche et l'hôte les modifie (`POST /api/games/[code]/options`, valeurs passées dans `normalizeOptions`).
+7. **Contenu dans Sanity, valeurs par défaut dans le code.** Le site fonctionne même si Sanity est vide (`DEFAULT_RULES`), Sanity surcharge.
+8. **3D = présentation seulement.** `layout.ts` calcule des *poses* (position/rotation) pour chaque carte selon la vue ; `scene.tsx` anime chaque objet vers sa pose. Même clé React = même objet ⇒ vrais trajets (main → table).
+9. **UI DOM par-dessus la 3D** (bandeau, journal, annonces, fin de partie, règles).
 
 ---
 
 ## 3. Organisation des fichiers
 
 ```
-<jeu>/
-├─ CLAUDE.md                     # règles du projet pour l'IA (à adapter par jeu)
-├─ package.json                  # scripts racine (dev, build, test, typecheck, deploy:studio)
+<slug>-online/<slug>/
+├─ CLAUDE.md                     # règles du projet pour l'IA (glossaire FR → EN du jeu inclus)
+├─ package.json                  # scripts racine (dev, dev:studio, build, test, typecheck, deploy:studio)
 ├─ pnpm-workspace.yaml
-├─ supabase/migrations/0001_parties.sql   # table `parties` (RLS sans policy)
-├─ scripts/                      # scripts ponctuels (extraction d'images depuis le PDF, seed Sanity)
-├─ packages/engine/src/          # 🧠 MOTEUR (TS pur)
-│  ├─ types.ts                   # GameState, Carte, Action, Phase…
-│  ├─ setup.ts                   # setupPartie(joueurs, contenu, rng)
-│  ├─ actions.ts                 # applyAction(state, action) + validations
-│  ├─ scoring.ts                 # calcul des résultats
-│  ├─ view.ts                    # vueJoueur(state, joueurId) → infos filtrées
-│  ├─ missions.ts / deck.ts / rng.ts / errors.ts
-│  ├─ debug.ts                   # commandes de debug (avancer d'un tour, finir la partie…)
-│  └─ *.test.ts                  # Vitest (dont simulation.test.ts : parties complètes aléatoires)
-├─ apps/studio/                  # 🗂 SANITY STUDIO (tout en anglais)
-│  ├─ schemaTypes/documents/     # singletons (interface, game, rules, texts) + documents (family, role, courtier, mission…)
-│  ├─ schemaTypes/objects/       # locale.ts (fr/en), condition.ts (récursif, calqué sur le moteur)
-│  └─ scripts/migrate.ts         # migration idempotente du contenu
-└─ apps/web/                     # 🌐 NEXT.JS
-   ├─ public/                    # assets (voir conventions)
-   └─ src/
-      ├─ app/
-      │  ├─ page.tsx, layout.tsx # accueil, métadonnées SEO, polices
-      │  ├─ partie/[code]/       # page de partie (lobby puis jeu)
-      │  ├─ api/parties/…        # routes : créer, rejoindre, quitter, lancer, action, rejouer, debug
-      │  ├─ api/media/           # proxy same-origin des images Sanity (SVG en masque CSS)
-      │  └─ robots.ts, sitemap.ts, manifest.ts, opengraph-image.*
-      ├─ server/                 # code serveur : supabase.ts, parties.ts (modifierPartie + verrou), joueur.ts (cookie), api.ts (handle/ApiError)
-      ├─ sanity/                 # client, queries.ts (defineQuery), types.ts (généré), catalogue-client.ts (Sanity → CatalogueClient)
-      ├─ lib/                    # api.ts (client fetch), use-partie.ts, realtime.ts, catalogue.ts (+ défauts), i18n.ts, son.ts, regles-defaut.ts
-      └─ components/
-         ├─ ui/                  # shadcn
-         ├─ accueil/, banquet/   # écran d'accueil (création / rejoindre)
-         ├─ partie/              # lobby, partie-client (bascule lobby → jeu)
-         ├─ jeu/                 # UI DOM du jeu : bandeau, journal, fin-de-partie, partage, contexte
-         ├─ jeu3d/               # scène 3D : scene, carte3d, disposition, fin3d, annonce, debug, reglages…
-         └─ regles.tsx           # règles en onglets (textes Sanity)
+├─ docs/                         # ce guide
+├─ supabase/migrations/          # 0001_games.sql (table `games`), 0002_tasks.sql (to-do) — RLS sans policy
+├─ packages/engine/src/          # 🧠 MOTEUR `@game/engine` (TS pur)
+│  ├─ contract.ts                # GameDefinition, PlayerInfo, Results, DebugCommand
+│  ├─ options.ts                 # OptionDefinition, defaultOptions, normalizeOptions
+│  ├─ rng.ts / errors.ts
+│  ├─ demo/                      # jeu démo « La Plus Haute » (types.ts, game.ts, game.test.ts) → remplacé par le vrai jeu
+│  └─ index.ts                   # export { … as GAME } = le jeu actif
+├─ apps/studio/                  # 🗂 SANITY STUDIO (singletons interface, game, rules, texts ; locale.ts)
+└─ apps/web/src/                 # 🌐 NEXT.JS
+   ├─ app/
+   │  ├─ page.tsx, layout.tsx    # accueil, SEO
+   │  ├─ game/[code]/            # page de partie (lobby puis jeu)
+   │  ├─ to-do/                  # to-do du projet (mot de passe TODO_PASSWORD)
+   │  ├─ api/games/…             # create, [code], join, leave, options, start, action, replay, debug
+   │  ├─ api/tasks/…             # to-do : liste, ajout, modification, suppression, login
+   │  └─ api/media, robots.ts, sitemap.ts, manifest.ts
+   ├─ server/                    # supabase.ts, games.ts (updateGame + verrou), player.ts (cookie), profile.ts, tasks.ts, api.ts (handle/ApiError)
+   ├─ sanity/                    # client, env, image
+   ├─ lib/                       # api.ts, use-live-game.ts, realtime.ts, game-types.ts, profile.ts, rules.ts, rules-server.ts, i18n.ts, site.ts
+   └─ components/
+      ├─ ui/                     # shadcn
+      ├─ home/                   # home.tsx (créer / rejoindre), screen.tsx (Screen, PrimaryButton, champs)
+      ├─ lobby/                  # lobby.tsx (PlayerList, LobbyButton), game-options.tsx
+      ├─ game/                   # game-client.tsx (lobby → jeu), game.tsx, game-over.tsx, sharing.ts, preview-sharing.tsx, context.tsx
+      ├─ game3d/                 # scene, card3d, layout, textures, announcement, aura, table-text, photo, debug, debug-tabs, settings
+      ├─ todo/                   # task-list.tsx, login.tsx
+      └─ rules.tsx               # règles en onglets
 ```
 
 ---
@@ -85,10 +80,11 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 ## 4. Conventions
 
 ### Langue & nommage
-- **Code en anglais, mots "métier" en français** : `courtisan`, `famille`, `domaine`, `pioche`, `lumiere`, `disgrace`… (fonctions/variables métier en français : `jouerCarte`, `vueJoueur`, `modifierPartie`, `REGLAGES_CARTE`). Garder le même principe pour un nouveau jeu : lister dans `CLAUDE.md` les mots métier du jeu.
-- **Peu de commentaires** ; noms explicites.
-- **Sanity 100 % anglais** (types, ids, champs, titres). Ids déterministes : `family-butterfly`, `role-spy`, `courtier-noble-hare`. Le champ `key` contient la clé du moteur (`papillon`, `espion`).
-- Textes affichés localisés `{ fr, en }` (`localeString` / `localeText`), lus avec `traduire()`.
+- **Tout le code est en anglais**, y compris le vocabulaire métier du jeu : fonctions, variables, types, fichiers, dossiers, routes API, URL, tables et colonnes SQL, clés de stockage, codes d'erreur (`playCard`, `PlayerView`, `updateGame`, `CARD_SETTINGS`, `components/game/game-over.tsx`, `/api/games/[code]/join`, table `games`, `GAME_NOT_FOUND`).
+- Pour un nouveau jeu, fixer dans `CLAUDE.md` un **glossaire FR → EN** des mots du jeu (ex. Courtisans : courtisan → `courtier`, famille → `family`, domaine → `domain`, pioche → `deck`, lumière / disgrâce → `favor` / `disgrace`) pour que l'IA nomme toujours pareil.
+- **Prévu pour le multilingue** : seuls les textes affichés au joueur sont en français. Ils vivent dans Sanity (`{ fr, en }` via `localeString` / `localeText`, lus avec `translate()`) ou, pour l'interface, dans les composants en attendant des dictionnaires `fr` / `en`. Jamais de mot français dans un identifiant.
+- **Peu de commentaires**, en anglais ; noms explicites.
+- **Sanity 100 % anglais** (types, ids, champs, titres). Ids déterministes : `family-butterfly`, `role-spy`, `courtier-noble-hare`. Le champ `key` contient la clé du moteur (`butterfly`, `spy`).
 
 ### Assets (`apps/web/public`)
 - Dossiers en anglais minuscules : `home/`, `cards/`, `pictograms/`, `rules/`, `sounds/`, `textures/`.
@@ -102,7 +98,7 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 ### Debug
 - Panneau **Shift+D** (ou `?debug`). Onglets `GAME / SCENE / AUDIO / TRANSITION` + compteur FPS.
 - **Tout paramètre visuel est réglable** (via `useReglages(dossier, objetMutable, champs)`) avec un bouton **Copy values** : Oré règle en live puis colle le JSON à l'IA, qui fige les valeurs par défaut.
-- Boutons de phase (START / NEXT TURN / END) branchés sur `POST /api/parties/[code]/debug` (désactivé en prod sauf `DEBUG_PARTIES=1`).
+- Boutons de phase (START / NEXT TURN / END) branchés sur `POST /api/games/[code]/debug` (désactivé en prod sauf `DEBUG_GAMES=1`).
 
 ---
 
@@ -138,17 +134,17 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 | # | Étape | Qui | Livrable |
 |---|---|---|---|
 | 0 | Fournir le PDF des règles + assets bruts + nom du jeu | 👤 | dossier `ASSETS/` |
-| 1 | Lire les règles, rédiger **`plan-v1.md`** (règles formalisées, matériel, cas limites, infos cachées, liste des mots métier) | 🤖 | plan |
+| 1 | Lire les règles, rédiger **`plan-v1.md`** (règles formalisées, matériel, cas limites, infos cachées, glossaire FR → EN des mots du jeu) | 🤖 | plan |
 | ⭐ | **Valider l'interprétation des règles** (c'est le point le plus critique : une règle mal comprise se propage partout) | 👤 | ok / corrections |
-| 2 | Dupliquer le template, renommer (`@<jeu>/engine`, cookie `<jeu>_joueur`, canal `partie:`), adapter `CLAUDE.md` | 🤖 | repo propre |
+| 2 | Dupliquer le template (`setup-games.sh`), adapter `lib/site.ts` et `CLAUDE.md` (glossaire FR → EN) | 🤖 | repo propre |
 | 3 | Créer comptes + `.env.local` + table Supabase + projet Sanity | 👤 | env prêts |
 | 4 | **Moteur** : types, setup, actions, scoring, vue filtrée, tests + simulation | 🤖 | tests verts |
 | ⭐ | Valider le moteur via un récap des règles codées (et, si possible, une partie texte simulée) | 👤 | ok |
 | 5 | Schémas Sanity + migration + seed (images extraites du PDF si besoin) | 🤖 | studio |
 | 6 | `schema:deploy`, `migrate`, deploy studio, vérifier le contenu | 👤 | contenu en ligne |
-| 7 | Accueil + lobby (réutiliser `banquet/`, `partie/`) — adapter l'habillage | 🤖 | écrans |
+| 7 | Accueil + lobby (réutiliser `home/`, `lobby/`) — adapter l’habillage | 🤖 | écrans |
 | ⭐ | **Direction artistique** : ambiance, typos, couleurs, décor d'accueil | 👤 | retours visuels |
-| 8 | Plateau 3D : disposition, cartes, main, zones jouables, ciblage | 🤖 | jeu jouable |
+| 8 | Plateau 3D : layout, cartes, main, zones jouables, ciblage | 🤖 | jeu jouable |
 | ⭐ | **Jouabilité / lisibilité** : taille des cartes, caméra, feedbacks, ce qui est caché | 👤 | retours + JSON de réglages copiés |
 | 9 | Ouverture (installation animée), annonces de tour | 🤖 | |
 | 10 | Fin de partie : séquence de décompte, tableau des scores, rejouer, partage image | 🤖 | |
@@ -169,20 +165,18 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 ## 7. Ce qui est générique (réutilisable tel quel) vs spécifique au jeu
 
 **Générique (garder)**
-- `server/` (supabase, parties avec verrou optimiste, cookie joueur, `handle`/`ApiError`), routes `api/parties/*`, `lib/api.ts`, `use-partie.ts`, `realtime.ts`
-- Lobby, écran d'accueil (habillage à changer), `EcranOrdinateur`
-- Debug : `debug.tsx`, `onglets-debug.ts`, `reglages.ts` (`useReglages`, Copy values, FPS)
-- Annonces (`annonce.tsx`), auras, `texte-table.tsx`, carte 3D (`carte3d.tsx` : pli, reflets, contour), textures/motifs
-- Règles en onglets (`regles.tsx` + `regles-defaut.ts` + singleton Sanity `rules`)
-- Partage de fin (photo 3D `photo.tsx` + `partage.ts` + `apercu-partage.tsx`), tableau des scores (structure)
-- SEO (`layout.tsx` metadata, robots, sitemap, manifest, OG), proxy `api/media`
-- Sanity : `locale.ts`, singletons `interface/game/texts/rules`, pattern `migrate.ts`
+- `server/` (supabase, games avec verrou optimiste, cookie joueur, `handle`/`ApiError`), routes `api/games/*`, `lib/api.ts`, `use-live-game.ts`, `realtime.ts`
+- Accueil, lobby et options de partie (rendues depuis `GAME.options`)
+- Debug : `debug.tsx`, `debug-tabs.ts`, `settings.ts` (`useSettings`, Copy values, FPS), boutons START / NEXT TURN / END
+- Annonces (`announcement.tsx`), auras, `table-text.tsx`, carte 3D (`card3d.tsx` : pli, reflets, contour), textures
+- Règles en onglets (`rules.tsx` + `lib/rules.ts` + singleton Sanity `rules`)
+- Fin de partie (`game-over.tsx`), partage (`photo.tsx` + `sharing.ts` + `preview-sharing.tsx`)
+- SEO (metadata, robots, sitemap, manifest), proxy `api/media`, page `/to-do`
 
 **Spécifique (à réécrire par jeu)**
-- `packages/engine/*` (règles)
-- `disposition.ts` (où vont les cartes), `scene.tsx` (zones, interactions), `fin.ts`/`fin3d.tsx` (séquence de décompte)
-- Types de contenu Sanity (family/role/courtier/mission → équivalents du nouveau jeu), `condition.ts`
-- Textes, assets, couleurs, `CATALOGUE_PAR_DEFAUT`
+- `packages/engine/src/<jeu>/` (règles, vue, options, debug) et l'export `GAME`
+- `layout.ts` (où vont les cartes), `scene.tsx` (zones, interactions), `textures.ts`, `game.tsx` (bandeau, annonces du jeu)
+- `lib/site.ts`, thème dans `globals.css`, textes, assets, types de contenu Sanity propres au jeu
 
 ---
 
@@ -212,4 +206,4 @@ pnpm --filter studio run deploy
 ```
 
 ### Variables d'environnement (`apps/web/.env.local`, jamais commité)
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `ANON_KEY`), `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SITE_URL`, optionnel `DEBUG_PARTIES=1`.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `ANON_KEY`), `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SITE_URL`, `TODO_PASSWORD`, optionnel `DEBUG_GAMES=1`.

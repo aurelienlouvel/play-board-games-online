@@ -12,7 +12,7 @@ pnpm dev:studio                                # Sanity Studio
 pnpm test && pnpm typecheck
 ```
 
-Supabase : exécuter `supabase/migrations/0001_parties.sql` puis `0002_taches.sql` (SQL editor).
+Supabase : exécuter `supabase/migrations/0001_games.sql` puis `0002_tasks.sql` (SQL editor).
 
 ## Nouveau jeu
 

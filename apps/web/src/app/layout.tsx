@@ -1,26 +1,26 @@
 import type { Metadata, Viewport } from "next"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { AUTEUR, COULEUR, DESCRIPTION, MOTS_CLES, NOM, SITE_URL, TITRE } from "@/lib/site"
+import { AUTHOR, COLOR, DESCRIPTION, KEYWORDS, NAME, SITE_URL, TITLE } from "@/lib/site"
 import "./globals.css"
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: TITRE, template: `%s · ${TITRE}` },
+  title: { default: TITLE, template: `%s · ${TITLE}` },
   description: DESCRIPTION,
-  applicationName: NOM,
-  keywords: MOTS_CLES,
-  authors: [{ name: AUTEUR.nom, url: AUTEUR.url }],
-  creator: AUTEUR.nom,
+  applicationName: NAME,
+  keywords: KEYWORDS,
+  authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+  creator: AUTHOR.name,
   category: "games",
   alternates: { canonical: "/" },
-  openGraph: { type: "website", locale: "fr_FR", url: "/", siteName: TITRE, title: TITRE, description: DESCRIPTION },
-  twitter: { card: "summary_large_image", title: TITRE, description: DESCRIPTION },
+  openGraph: { type: "website", locale: "fr_FR", url: "/", siteName: TITLE, title: TITLE, description: DESCRIPTION },
+  twitter: { card: "summary_large_image", title: TITLE, description: DESCRIPTION },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
   formatDetection: { telephone: false, email: false, address: false },
 }
 
-export const viewport: Viewport = { themeColor: COULEUR, colorScheme: "dark" }
+export const viewport: Viewport = { themeColor: COLOR, colorScheme: "dark" }
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
