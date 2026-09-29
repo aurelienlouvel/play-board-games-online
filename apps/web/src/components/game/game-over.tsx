@@ -13,6 +13,7 @@ import { PrimaryButton } from "@/components/home/screen"
 import { api } from "@/lib/api"
 import type { PublicGame } from "@/lib/game-types"
 import { cn } from "@/lib/utils"
+import { useSiteSettings } from "@/components/settings-provider"
 import { useGame } from "./context"
 
 function hash(text: string) {
@@ -56,6 +57,7 @@ function Details({ j, large, centered }: { j: PlayerResult; large?: boolean; cen
 
 export function GameOver({ onUpdate, isOpen, onToggle }: { onUpdate: (p: PublicGame) => void; isOpen: boolean; onToggle: () => void }) {
   const { view, game, color } = useGame()
+  const { title } = useSiteSettings()
   const [sending, setSending] = useState(false)
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState(false)
@@ -76,7 +78,7 @@ export function GameOver({ onUpdate, isOpen, onToggle }: { onUpdate: (p: PublicG
         winner: results.winners.includes(j.playerId),
       }))
     const t = setTimeout(() => {
-      generateShareImage(lines, game.code)
+      generateShareImage(lines, game.code, title)
         .then((f) => !cancelled && setImage(f))
         .catch(() => !cancelled && toast.error("Impossible de générer l'image du résultat"))
     }, 1200)

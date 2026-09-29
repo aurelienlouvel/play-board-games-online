@@ -7,13 +7,15 @@ import { toast } from "sonner"
 import { PrimaryButton } from "@/components/home/screen"
 import { PLAYER_COLORS } from "@/components/game/context"
 import { api } from "@/lib/api"
-import { MAX_PLAYERS, MIN_PLAYERS, type PublicGame } from "@/lib/game-types"
+import { useSiteSettings } from "@/components/settings-provider"
+import type { PublicGame } from "@/lib/game-types"
 
 export function PlayerList({ game }: { game: PublicGame }) {
+  const { maxPlayers } = useSiteSettings()
   return (
     <div className="mt-[4vh] flex w-full max-w-md flex-col items-center">
       <p className="mb-2 text-sm text-foreground/50 tabular-nums">
-        {game.players.length}/{MAX_PLAYERS} joueurs
+        {game.players.length}/{maxPlayers} joueurs
       </p>
       <ul className="flex w-full flex-col items-center gap-1.5">
         <AnimatePresence>
@@ -39,9 +41,10 @@ export function PlayerList({ game }: { game: PublicGame }) {
 }
 
 export function LobbyButton({ game, onUpdate }: { game: PublicGame; onUpdate: (p: PublicGame) => void }) {
+  const { minPlayers } = useSiteSettings()
   const [launching, setLaunching] = useState(false)
   const isHost = game.meId === game.hostId
-  const enoughPlayers = game.players.length >= MIN_PLAYERS
+  const enoughPlayers = game.players.length >= minPlayers
 
   async function start() {
     setLaunching(true)

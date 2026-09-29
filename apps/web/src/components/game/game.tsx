@@ -14,7 +14,7 @@ import { RulesButton } from "@/components/rules"
 import { api, type ClientDebugCommand } from "@/lib/api"
 import type { PublicGame } from "@/lib/game-types"
 import type { RulesContent } from "@/lib/rules"
-import { NAME } from "@/lib/site"
+import { useSiteSettings } from "@/components/settings-provider"
 import { cn } from "@/lib/utils"
 import { GameProvider, useGame } from "./context"
 import { winnerAnnouncement, GameOver } from "./game-over"
@@ -44,6 +44,7 @@ function eventText(e: GameEvent, nickname: (id: string) => string) {
 }
 
 function Table({ rules, onUpdate, onLeave }: Props) {
+  const { title } = useSiteSettings()
   const { game, view, nickname, color } = useGame()
   const settings = useAnnouncementSettings()
   const [announcements, setAnnouncements] = useState<QueuedAnnouncement[]>([])
@@ -133,7 +134,7 @@ function Table({ rules, onUpdate, onLeave }: Props) {
 
       <header className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-4 p-4">
         <div className="pointer-events-auto flex items-center gap-3">
-          <p className="font-display text-xl font-black tracking-[0.14em] uppercase">{NAME}</p>
+          <p className="font-display text-xl font-black tracking-[0.14em] uppercase">{title}</p>
           <RulesButton rules={rules} />
         </div>
         <button

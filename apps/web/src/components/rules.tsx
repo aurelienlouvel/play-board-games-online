@@ -1,12 +1,12 @@
 "use client"
 
-import { BookOpenIcon, PlayIcon } from "lucide-react"
+import { BookOpenIcon, FileTextIcon, PlayIcon } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import type { RulesContent } from "@/lib/rules"
-import { NAME } from "@/lib/site"
+import { useSiteSettings } from "@/components/settings-provider"
 import { cn } from "@/lib/utils"
 
 export function RichText({ text }: { text: string }) {
@@ -35,6 +35,11 @@ export function RulesButton({ rules, className }: { rules: RulesContent; classNa
   const tabs = [...rules.sections.map((s) => s.title), ...(rules.videoId ? ["Vidéo"] : [])]
   const [active, setActive] = useState(0)
   const section = rules.sections[active]
+  const { title: gameTitle, rulesPdf } = useSiteSettings()
+  const pdfs = [
+    { lang: "FR", url: rulesPdf.fr },
+    { lang: "EN", url: rulesPdf.en },
+  ].filter((p): p is { lang: string; url: string } => !!p.url)
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -50,7 +55,7 @@ export function RulesButton({ rules, className }: { rules: RulesContent; classNa
       <DialogContent className="flex h-[80vh] w-[min(95vw,64rem)] max-w-none gap-0 overflow-hidden rounded-2xl border-0 bg-secondary p-0 text-secondary-foreground sm:max-w-none">
         <nav className="flex w-64 shrink-0 flex-col gap-1 bg-surface p-5 text-foreground">
           <DialogTitle className="px-3 pb-1 font-display text-2xl">Règles</DialogTitle>
-          <DialogDescription className="px-3 pb-5 text-sm text-foreground/60">{NAME}</DialogDescription>
+          <DialogDescription className="px-3 pb-5 text-sm text-foreground/60">{gameTitle}</DialogDescription>
           {tabs.map((title, i) => (
             <button
               key={title}
@@ -66,6 +71,22 @@ export function RulesButton({ rules, className }: { rules: RulesContent; classNa
               <span className="relative">{title}</span>
             </button>
           ))}
+          {pdfs.length > 0 && (
+            <div className="mt-auto flex flex-col gap-1 border-t border-foreground/10 pt-4">
+              {pdfs.map((p) => (
+                <a
+                  key={p.lang}
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground/70 transition-colors hover:text-foreground"
+                >
+                  <FileTextIcon className="size-4" />
+                  Règles PDF ({p.lang})
+                </a>
+              ))}
+            </div>
+          )}
         </nav>
         <ScrollArea className="min-w-0 flex-1">
           <AnimatePresence mode="wait">

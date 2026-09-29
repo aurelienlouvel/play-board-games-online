@@ -4,9 +4,9 @@ export const SITE_URL =
 
 export const SLUG = "template"
 
+// Defaults, overridden by the /setup settings (Sanity "settings" document)
 export const NAME = "La Plus Haute"
 
-export const TITLE = "Play Game Online · Template"
 
 export const TAGLINE = "Le socle commun des jeux de société en ligne"
 
@@ -15,9 +15,7 @@ export const DESCRIPTION =
 
 export const KEYWORDS = ["jeu de cartes en ligne", "jeu de société en ligne", "jeu entre amis", "jeu gratuit", "multijoueur"]
 
-export const COLOR = "#13213a"
 
-export const LOGO: string | null = null
 
 export const AUTHOR = { name: "oré", url: "https://ore.today" }
 

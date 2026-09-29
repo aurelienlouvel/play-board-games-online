@@ -7,7 +7,8 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { Logo } from "@/components/logo"
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
-import { AUTHOR, CONTACT, CREDITS, LOGO, NAME } from "@/lib/site"
+import { useSiteSettings } from "@/components/settings-provider"
+import { AUTHOR, CONTACT, CREDITS } from "@/lib/site"
 import { cn } from "@/lib/utils"
 
 export function Screen({
@@ -24,12 +25,13 @@ export function Screen({
   onSubmit?: (e: React.FormEvent) => void
 }) {
   const Container = onSubmit ? "form" : "div"
+  const { title, logo } = useSiteSettings()
   return (
     <div className="flex min-h-dvh flex-col">
       <main className="game-bg relative flex flex-1 flex-col items-center overflow-hidden px-4 pt-[8vh] pb-[6vh]">
         {above && <div className="absolute top-5 right-5 z-20">{above}</div>}
         <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} className="w-[min(80vw,520px)]">
-          {LOGO ? <Logo src={LOGO} /> : <h1 className="text-center font-display text-5xl font-black tracking-tight text-balance md:text-6xl">{NAME}</h1>}
+          {logo ? <Logo src={logo} alt={title} /> : <h1 className="text-center font-display text-5xl font-black tracking-tight text-balance md:text-6xl">{title}</h1>}
         </motion.div>
         <Container onSubmit={onSubmit} className="flex w-full flex-1 flex-col items-center">
           {children}

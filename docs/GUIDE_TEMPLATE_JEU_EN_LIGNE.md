@@ -58,9 +58,9 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
    ├─ app/
    │  ├─ page.tsx, layout.tsx    # accueil, SEO
    │  ├─ game/[code]/            # page de partie (lobby puis jeu)
-   │  ├─ to-do/                  # to-do du projet (mot de passe TODO_PASSWORD)
+   │  ├─ (admin)/setup, status/  # admin (ADMIN_LOGIN / ADMIN_PASSWORD) : paramètres Sanity + to-do, dashboard
    │  ├─ api/games/…             # create, [code], join, leave, options, start, action, replay, debug
-   │  ├─ api/tasks/…             # to-do : liste, ajout, modification, suppression, login
+   │  ├─ api/tasks/…, api/admin/… # to-do, login/logout, paramètres, logo
    │  └─ api/media, robots.ts, sitemap.ts, manifest.ts
    ├─ server/                    # supabase.ts, games.ts (updateGame + verrou), player.ts (cookie), profile.ts, tasks.ts, api.ts (handle/ApiError)
    ├─ sanity/                    # client, env, image
@@ -71,7 +71,7 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
       ├─ lobby/                  # lobby.tsx (PlayerList, LobbyButton), game-options.tsx
       ├─ game/                   # game-client.tsx (lobby → jeu), game.tsx, game-over.tsx, sharing.ts, preview-sharing.tsx, context.tsx
       ├─ game3d/                 # scene, card3d, layout, textures, announcement, aura, table-text, photo, debug, debug-tabs, settings
-      ├─ todo/                   # task-list.tsx, login.tsx
+      ├─ admin/                  # UI admin shadcn preset b1VlJAwK (luma) : ui/, settings-form, task-list, admin-shell
       └─ rules.tsx               # règles en onglets
 ```
 
@@ -171,7 +171,7 @@ Ce document décrit le repo **Courtisans Online** pour le réutiliser comme **te
 - Annonces (`announcement.tsx`), auras, `table-text.tsx`, carte 3D (`card3d.tsx` : pli, reflets, contour), textures
 - Règles en onglets (`rules.tsx` + `lib/rules.ts` + singleton Sanity `rules`)
 - Fin de partie (`game-over.tsx`), partage (`photo.tsx` + `sharing.ts` + `preview-sharing.tsx`)
-- SEO (metadata, robots, sitemap, manifest), proxy `api/media`, page `/to-do`
+- SEO (metadata, robots, sitemap, manifest), proxy `api/media`, pages `/setup` (paramètres du site + to-do) et `/status` (dashboard + Vercel Web Analytics)
 
 **Spécifique (à réécrire par jeu)**
 - `packages/engine/src/<jeu>/` (règles, vue, options, debug) et l'export `GAME`
@@ -206,4 +206,4 @@ pnpm --filter studio run deploy
 ```
 
 ### Variables d'environnement (`apps/web/.env.local`, jamais commité)
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `ANON_KEY`), `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SITE_URL`, `TODO_PASSWORD`, optionnel `DEBUG_GAMES=1`.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `ANON_KEY`), `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `SANITY_API_WRITE_TOKEN` (Editor, pour /setup), optionnels `VERCEL_TOKEN` (+ `VERCEL_TEAM_ID`) pour les stats de /status et `DEBUG_GAMES=1`.

@@ -4,6 +4,7 @@ import { CopyIcon, DownloadIcon, Share2Icon } from "lucide-react"
 import { useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import { useSiteSettings } from "@/components/settings-provider"
 import { copyImage, shareFile, canShare, downloadFile } from "./sharing"
 
 const BUTTON =
@@ -12,6 +13,7 @@ const WHITE = "bg-foreground text-background shadow-[0_10px_30px_rgb(0_0_0/55%)]
 const OUTLINE = "border border-foreground/60 text-foreground hover:bg-foreground/10"
 
 export function SharePreview({ file, text, onClose }: { file: File | null; text: string; onClose: () => void }) {
+  const { title } = useSiteSettings()
   const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
   useEffect(() => () => void (url && URL.revokeObjectURL(url)), [url])
 
@@ -31,7 +33,7 @@ export function SharePreview({ file, text, onClose }: { file: File | null; text:
   async function share() {
     if (!file) return
     try {
-      await shareFile(file, text)
+      await shareFile(file, text, title)
     } catch (e) {
       if ((e as Error).name !== "AbortError") toast.error("Impossible de partager l'image")
     }

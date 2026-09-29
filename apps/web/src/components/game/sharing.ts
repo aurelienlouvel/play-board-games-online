@@ -1,7 +1,7 @@
 "use client"
 
 import { captureGamePhoto } from "../game3d/photo"
-import { NAME, SLUG, TITLE } from "@/lib/site"
+import { SLUG } from "@/lib/site"
 
 export type ShareRow = {
   rank: number
@@ -39,7 +39,7 @@ function setSpacing(ctx: CanvasRenderingContext2D, px: number) {
   if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${px}px`
 }
 
-export async function shareImage(lines: ShareRow[], photo: HTMLCanvasElement | null): Promise<Blob> {
+export async function shareImage(lines: ShareRow[], photo: HTMLCanvasElement | null, title: string): Promise<Blob> {
   await Promise.all([document.fonts?.load(`800 72px ${FONT}`).catch(() => null), document.fonts?.load(`500 28px ${FONT}`).catch(() => null)])
   const W = 1600
   const H = 1200
@@ -134,7 +134,7 @@ export async function shareImage(lines: ShareRow[], photo: HTMLCanvasElement | n
   setSpacing(ctx, 3)
   ctx.fillStyle = "rgba(243,236,214,0.45)"
   ctx.textAlign = "left"
-  ctx.fillText(NAME.toUpperCase(), 36, H - 20)
+  ctx.fillText(title.toUpperCase(), 36, H - 20)
   ctx.textAlign = "right"
   setSpacing(ctx, 1.5)
   ctx.fillText(`${date} · ${time}`, W - 36, H - 20)
@@ -142,8 +142,8 @@ export async function shareImage(lines: ShareRow[], photo: HTMLCanvasElement | n
   return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("capture"))), "image/png"))
 }
 
-export async function generateShareImage(lines: ShareRow[], code: string) {
-  const blob = await shareImage(lines, captureGamePhoto(1600, 1200))
+export async function generateShareImage(lines: ShareRow[], code: string, title: string) {
+  const blob = await shareImage(lines, captureGamePhoto(1600, 1200), title)
   return new File([blob], `${SLUG}-${code}.png`, { type: "image/png" })
 }
 
@@ -151,8 +151,8 @@ export function canShare(file: File) {
   return typeof navigator !== "undefined" && !!navigator.canShare?.({ files: [file] })
 }
 
-export async function shareFile(file: File, text: string) {
-  await navigator.share({ files: [file], title: TITLE, text: text })
+export async function shareFile(file: File, text: string, title: string) {
+  await navigator.share({ files: [file], title, text })
 }
 
 export function downloadFile(file: File) {

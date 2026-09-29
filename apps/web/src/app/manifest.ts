@@ -1,15 +1,16 @@
 import type { MetadataRoute } from "next"
-import { COLOR, DESCRIPTION, NAME, TITLE } from "@/lib/site"
+import { loadSettings } from "@/lib/settings-server"
 
-export default function manifest(): MetadataRoute.Manifest {
+export default async function manifest(): Promise<MetadataRoute.Manifest> {
+  const { title, description, theme } = await loadSettings()
   return {
-    name: TITLE,
-    short_name: NAME,
-    description: DESCRIPTION,
+    name: title,
+    short_name: title,
+    description,
     start_url: "/",
     display: "standalone",
-    background_color: COLOR,
-    theme_color: COLOR,
+    background_color: theme.background,
+    theme_color: theme.background,
     lang: "fr",
   }
 }

@@ -12,6 +12,11 @@ Base commune des jeux de société en ligne (`<slug>-online`). La démo « La Pl
   - vue → `view` · état → `state` · résultats → `results` · vainqueur → `winner` · journal → `log`
   - règles → `rules` · réglages → `settings` · annonce → `announcement` · partage → `sharing` · tâche → `task`
 
+## UI admin
+- `/setup` et `/status` utilisent le preset shadcn `b1VlJAwK` (style luma, neutral, Inter, Hugeicons), scopé par la classe `.admin` dans `globals.css`
+- Composants dans `components/admin/ui` (bases radix + `style-luma.css` inliné). Pour en ajouter : `pnpm dlx shadcn@latest add <comp>` depuis un poste qui accède à ui.shadcn.com, puis déplacer dans `components/admin/ui`
+- L'accueil, le lobby et le jeu gardent le thème du jeu (couleurs et polices réglées dans /setup)
+
 ## Assets
 Fichiers dans `apps/web/public` nommés en anglais, `UPPER_SNAKE_CASE` (ex. `cards/BACK.webp`), dossiers en anglais minuscules.
 
@@ -33,15 +38,16 @@ Fichiers dans `apps/web/public` nommés en anglais, `UPPER_SNAKE_CASE` (ex. `car
   - `components/lobby` : `lobby.tsx`, `game-options.tsx` (rendues depuis `GAME.options`, éditables par l'hôte)
   - `components/game` : `game-client.tsx` (lobby → jeu), `game.tsx` (table, annonces, debug), `game-over.tsx`, `sharing.ts`, `preview-sharing.tsx`
   - `components/game3d` : `scene.tsx`, poses (`layout.ts`), `card3d.tsx`, textures, annonces, debug leva
-  - `app/to-do` + `app/api/tasks` : to-do du projet (Supabase, protégée par `TODO_PASSWORD`)
-  - `lib/site.ts` : nom, slug, SEO, couleurs du jeu
-- `apps/studio` — Sanity Studio (singletons `interface`, `game`, `rules`, `texts`)
+  - `app/(admin)/setup` : paramètres du site (Sanity `settings`) + to-do (Supabase `tasks`) ; `app/(admin)/status` : dashboard (Supabase `games`, Vercel Web Analytics)
+  - Admin protégé par `ADMIN_LOGIN` / `ADMIN_PASSWORD` (`server/admin.ts`), écriture Sanity via `SANITY_API_WRITE_TOKEN` (`server/settings.ts`)
+  - `lib/settings.ts` / `lib/settings-server.ts` : réglages du site (titre, description, logo, min/max joueurs, thème, polices, règles PDF) lus depuis Sanity avec les valeurs par défaut de `lib/site.ts`, fournis aux composants client par `useSiteSettings()`
+- `apps/studio` — Sanity Studio (singletons `settings`, `interface`, `game`, `rules`, `texts`)
 - `supabase/migrations` — `0001_games.sql`, `0002_tasks.sql`
 
 ## Adapter à un nouveau jeu
 1. Écrire le moteur dans `packages/engine/src/<game>/` (types, `GameDefinition`, tests) puis `export { myGame as GAME }` dans `index.ts`
 2. Déclarer les options de partie dans `options` : le lobby les affiche seul
-3. Adapter `lib/site.ts`, `globals.css` (tokens `--background`, `--accent-game`, `--surface`…), puis `game3d/scene.tsx`, `layout.ts` et `game/game.tsx`
+3. Adapter les valeurs par défaut (`lib/site.ts`, `DEFAULT_THEME` dans `lib/settings.ts`) puis régler le reste dans `/setup` ; adapter `game3d/scene.tsx`, `layout.ts` et `game/game.tsx`
 4. Remplacer `__SANITY_PROJECT_ID__` / `__SANITY_STUDIO_HOST__` (fait par `setup-games.sh`)
 5. Compléter le glossaire ci-dessus
 

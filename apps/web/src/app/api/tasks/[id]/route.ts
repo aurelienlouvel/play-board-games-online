@@ -1,10 +1,11 @@
 import type { NextRequest } from "next/server"
 import { ApiError, handle, readJson } from "@/server/api"
 import { supabaseAdmin } from "@/server/supabase"
-import { requireAccess, sanitizeText, type Task } from "@/server/tasks"
+import { requireAdmin } from "@/server/admin"
+import { sanitizeText, type Task } from "@/server/tasks"
 
 export const PATCH = handle(async (request: NextRequest, ctx: RouteContext<"/api/tasks/[id]">) => {
-  await requireAccess()
+  await requireAdmin()
   const { id } = await ctx.params
   const body = await readJson<{ text?: unknown; category?: unknown; done?: unknown; sort_order?: unknown }>(request)
   const patch: Partial<Task> & { updated_at: string } = { updated_at: new Date().toISOString() }
@@ -23,7 +24,7 @@ export const PATCH = handle(async (request: NextRequest, ctx: RouteContext<"/api
 })
 
 export const DELETE = handle(async (_request: NextRequest, ctx: RouteContext<"/api/tasks/[id]">) => {
-  await requireAccess()
+  await requireAdmin()
   const { id } = await ctx.params
   const { error } = await supabaseAdmin().from("tasks").delete().eq("id", id)
   if (error) throw error
