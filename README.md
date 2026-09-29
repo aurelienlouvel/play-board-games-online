@@ -6,13 +6,13 @@ Base des jeux de société en ligne : lobby avec options de partie, table 3D tem
 
 ```bash
 pnpm install
-cp apps/web/.env.example apps/web/.env.local   # remplir Supabase, Sanity, ADMIN_LOGIN / ADMIN_PASSWORD
+pnpm setup:env                                 # questions guidées → .env.local + variables Vercel
 pnpm dev                                       # http://localhost:3000
 pnpm dev:studio                                # Sanity Studio
 pnpm test && pnpm typecheck
 ```
 
-Supabase : exécuter `supabase/migrations/0001_games.sql` puis `0002_tasks.sql` (SQL editor).
+`pnpm setup:env` (scripts/setup-env.sh) : crée le token d'écriture Sanity et déploie le schéma, demande les clés Supabase et applique les migrations manquantes, crée le compte admin (mot de passe généré), ajoute le token Vercel pour /status, écrit `apps/web/.env.local` puis pousse les variables sur Vercel et redéploie. Relançable : Entrée garde la valeur actuelle.
 
 ## Administration
 

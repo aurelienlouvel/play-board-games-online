@@ -58,6 +58,9 @@ Fichiers dans `apps/web/public` nommés en anglais, `UPPER_SNAKE_CASE` (ex. `car
 - Identité joueur = cookie httpOnly `<slug>_player`
 - Routes : `POST /api/games`, `GET /api/games/[code]`, `POST .../join|leave|options|start|action|replay|debug`
 
+## Variables d'environnement
+- `pnpm setup:env` (`scripts/setup-env.sh`) les renseigne toutes (questions guidées, secrets masqués) : `.env.local` + Vercel. Ne jamais demander de secret dans le chat
+
 ## Principes
 - Le serveur est la seule source de vérité ; chaque joueur ne reçoit qu'une vue filtrée
 - Les règles du jeu vivent uniquement dans le moteur

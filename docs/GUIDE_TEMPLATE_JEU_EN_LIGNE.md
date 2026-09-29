@@ -206,4 +206,7 @@ pnpm --filter studio run deploy
 ```
 
 ### Variables d'environnement (`apps/web/.env.local`, jamais commité)
+
+`pnpm setup:env` pose les questions une par une (secrets masqués), crée le token Sanity, applique les migrations Supabase manquantes, génère le mot de passe admin, écrit `.env.local` et pousse tout sur Vercel.
+
 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (ou `ANON_KEY`), `SUPABASE_SECRET_KEY` / `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SANITY_PROJECT_ID`, `NEXT_PUBLIC_SANITY_DATASET`, `NEXT_PUBLIC_SITE_URL`, `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `SANITY_API_WRITE_TOKEN` (Editor, pour /setup), optionnels `VERCEL_TOKEN` (+ `VERCEL_TEAM_ID`) pour les stats de /status et `DEBUG_GAMES=1`.
