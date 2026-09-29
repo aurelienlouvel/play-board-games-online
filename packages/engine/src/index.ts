@@ -1,0 +1,6 @@
+export * from "./contrat"
+export * from "./errors"
+export * from "./options"
+export * from "./rng"
+export * from "./demo/types"
+export { demo as JEU, OPTIONS_DEMO, resultats } from "./demo/jeu"
